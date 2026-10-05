@@ -1,0 +1,6 @@
+{
+  "name": "Lyner",
+  "description": "A collaborative workspace designed to help people turn unclear ideas into clear direction and verified work.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
