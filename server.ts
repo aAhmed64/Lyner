@@ -158,7 +158,7 @@ Return a JSON object with this exact structure:
         understandingUpdate: parsed.understandingUpdate || understanding,
       });
     } catch (error: any) {
-      console.error('[discovery-turn error]:', error?.message);
+      console.warn('[discovery-turn error]:', error?.message);
       res.status(503).json({
         error: "Lyner couldn't respond right now. Try again in a moment.",
         technicalHint: error?.message,
@@ -237,7 +237,7 @@ Return a JSON object with this exact structure:
         tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
       });
     } catch (error: any) {
-      console.error('[synthesize-project error]:', error?.message);
+      console.warn('[synthesize-project error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't synthesize the Project DNA right now. Try again in a moment.",
@@ -348,7 +348,7 @@ Return a JSON object with this exact structure:
         knowledgeImpact: parsed.knowledgeImpact || undefined,
       });
     } catch (error: any) {
-      console.error('[chat error]:', error?.message);
+      console.warn('[chat error]:', error?.message);
       res.status(503).json({
         error: "Lyner couldn't respond right now. Try again in a moment.",
         technicalHint: error?.message,
@@ -441,7 +441,7 @@ Return a JSON object with this exact structure:
         pulseEvent: parsed.pulseEvent || undefined,
       });
     } catch (error: any) {
-      console.error('[update-dna error]:', error?.message);
+      console.warn('[update-dna error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't update the Project DNA right now. Try again in a moment.",
@@ -492,7 +492,7 @@ Return a JSON object with this exact structure:
           : [],
       });
     } catch (error: any) {
-      console.error('[generate-tasks error]:', error?.message);
+      console.warn('[generate-tasks error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't generate tasks right now. Try again in a moment.",
@@ -592,7 +592,7 @@ Return a JSON object with this exact structure:
             : undefined,
       });
     } catch (error: any) {
-      console.error('[verify-submission error]:', error?.message);
+      console.warn('[verify-submission error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't verify this submission right now. Try again in a moment.",
@@ -650,7 +650,7 @@ Return a JSON object with this exact structure:
         timestamp: 'Just now',
       });
     } catch (error: any) {
-      console.error('[generate-pulse error]:', error?.message);
+      console.warn('[generate-pulse error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't generate a Pulse update right now. Try again in a moment.",
@@ -698,7 +698,7 @@ Return a JSON object with this exact structure:
         currentDirectionSummary: parsed.currentDirectionSummary || '',
       });
     } catch (error: any) {
-      console.error('[analyze-project error]:', error?.message);
+      console.warn('[analyze-project error]:', error?.message);
       res.status(503).json({
         error:
           "Lyner couldn't analyze the project overview right now. Try again in a moment.",

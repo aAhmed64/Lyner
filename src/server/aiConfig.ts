@@ -13,6 +13,33 @@ export interface FeatherlessModelSlot {
 // Runtime-adjustable active model ID (initializes from FEATHERLESS_MODEL env var)
 let runtimeSelectedModel: string | null = null;
 
+// Global sequential request queue so Featherless AI concurrency limits (max 1-2 concurrent requests) are never exceeded
+let requestQueue: Promise<any> = Promise.resolve();
+let lastRequestFinishedAt = 0;
+const MIN_REQUEST_GAP_MS = 350;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function enqueueFeatherlessTask<T>(task: () => Promise<T>): Promise<T> {
+  const queued = requestQueue.then(async () => {
+    const elapsed = Date.now() - lastRequestFinishedAt;
+    if (elapsed < MIN_REQUEST_GAP_MS) {
+      await sleep(MIN_REQUEST_GAP_MS - elapsed);
+    }
+    try {
+      return await task();
+    } finally {
+      lastRequestFinishedAt = Date.now();
+    }
+  });
+
+  // Ensure the queue chain continues even if an individual request fails
+  requestQueue = queued.catch(() => undefined);
+  return queued;
+}
+
 export function getFeatherlessConfig() {
   const apiKey = (process.env.FEATHERLESS_API_KEY || '').trim();
   const baseUrl = (
@@ -82,7 +109,7 @@ export function getFeatherlessConfig() {
       activeModelFamily = 'Kimi';
     } else if (
       lower.includes('glm') ||
-      lower.includes('THUDM'.toLowerCase()) ||
+      lower.includes('thudm') ||
       lower.includes('zai') ||
       activeModel === glmModel
     ) {
@@ -145,8 +172,14 @@ export function extractAndValidateJSON<T>(rawContent: string): T {
     throw new Error('Empty response received from Featherless AI model.');
   }
 
-  // Remove <think>...</think> blocks if present
-  const withoutThink = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  // Remove closed <think>...</think> blocks if present
+  let withoutThink = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  // If an unclosed <think> tag exists before JSON starts, strip up to the last '{' block
+  if (withoutThink.includes('<think>')) {
+    const afterThink = withoutThink.split('</think>').pop() || withoutThink;
+    withoutThink = afterThink.replace(/<think>/gi, '').trim();
+  }
 
   // Remove markdown ```json ... ``` fences if present
   const fenceMatch = withoutThink.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -156,7 +189,7 @@ export function extractAndValidateJSON<T>(rawContent: string): T {
   try {
     return JSON.parse(candidate) as T;
   } catch {
-    // Fallback: locate first '{' and last '}'
+    // Fallback: locate outermost '{' and '}'
     const firstBrace = candidate.indexOf('{');
     const lastBrace = candidate.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace > firstBrace) {
@@ -169,7 +202,8 @@ export function extractAndValidateJSON<T>(rawContent: string): T {
 
 /**
  * Executes a structured JSON completion against Featherless AI.
- * Never exposes API keys or authorization headers in error messages.
+ * Serializes concurrent calls through a sequential queue and automatically retries
+ * HTTP 429 (Concurrency limit exceeded / rate limit) and transient 5xx responses with backoff.
  */
 export async function callFeatherlessJSON<T>(params: {
   systemPrompt: string;
@@ -191,55 +225,83 @@ export async function callFeatherlessJSON<T>(params: {
     );
   }
 
-  const endpoint = `${config.baseUrl}/chat/completions`;
+  return enqueueFeatherlessTask(async () => {
+    const endpoint = `${config.baseUrl}/chat/completions`;
+    const retryBackoffsMs = [1400, 2800, 4800, 7000];
+    let lastErrorDetail = '';
+    let lastStatus = 0;
 
-  const requestBody: Record<string, any> = {
-    model: config.activeModel,
-    messages: [
-      {
-        role: 'system',
-        content: `${LYNER_SYSTEM_CONSTITUTION}\n\n${params.systemPrompt}\n\nIMPORTANT: Return ONLY a valid JSON object. Do not wrap in extra commentary.`,
-      },
-      {
-        role: 'user',
-        content: params.userPrompt,
-      },
-    ],
-    temperature: params.temperature ?? 0.35,
-    max_tokens: params.maxTokens ?? 2048,
-  };
+    for (let attempt = 0; attempt <= retryBackoffsMs.length; attempt++) {
+      const requestBody: Record<string, any> = {
+        model: config.activeModel,
+        messages: [
+          {
+            role: 'system',
+            content: `${LYNER_SYSTEM_CONSTITUTION}\n\n${params.systemPrompt}\n\nIMPORTANT: Return ONLY a valid JSON object. Keep internal thinking concise and output valid JSON immediately.`,
+          },
+          {
+            role: 'user',
+            content: params.userPrompt,
+          },
+        ],
+        temperature: params.temperature ?? 0.35,
+        max_tokens: params.maxTokens ?? 3072,
+      };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
-  });
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-  if (!response.ok) {
-    const status = response.status;
-    let errorDetail = '';
-    try {
-      const errJson: any = await response.json();
-      errorDetail =
-        errJson?.error?.message || errJson?.message || response.statusText;
-    } catch {
-      errorDetail = response.statusText;
+      if (response.ok) {
+        const data: any = await response.json();
+        const msg = data?.choices?.[0]?.message;
+        const rawText =
+          msg?.content || msg?.reasoning_content || data?.choices?.[0]?.text || '';
+        return extractAndValidateJSON<T>(rawText);
+      }
+
+      lastStatus = response.status;
+      try {
+        const errJson: any = await response.json();
+        lastErrorDetail =
+          errJson?.error?.message || errJson?.message || response.statusText;
+      } catch {
+        lastErrorDetail = response.statusText;
+      }
+
+      // Retry on 429 (Concurrency limit / Rate limit) or transient 502/503/504
+      const isRetryable =
+        lastStatus === 429 ||
+        lastStatus === 502 ||
+        lastStatus === 503 ||
+        lastStatus === 504;
+
+      if (isRetryable && attempt < retryBackoffsMs.length) {
+        const waitMs = retryBackoffsMs[attempt];
+        console.warn(
+          `[Featherless AI] HTTP ${lastStatus} (${lastErrorDetail}). Retrying attempt ${
+            attempt + 1
+          }/${retryBackoffsMs.length} in ${waitMs}ms...`
+        );
+        await sleep(waitMs);
+        continue;
+      }
+
+      break;
     }
-    console.error(
-      `[Featherless AI Error] status=${status} model=${config.activeModel} detail=${errorDetail}`
+
+    console.warn(
+      `[Featherless AI Notice] status=${lastStatus} model=${config.activeModel} detail=${lastErrorDetail}`
     );
     throw new Error(
-      `Featherless AI request failed (${status}): ${
-        errorDetail || 'Unable to reach model'
+      `Featherless AI is busy (${lastStatus}): ${
+        lastErrorDetail || 'Please try again in a moment.'
       }`
     );
-  }
-
-  const data: any = await response.json();
-  const rawText = data?.choices?.[0]?.message?.content || '';
-
-  return extractAndValidateJSON<T>(rawText);
+  });
 }
