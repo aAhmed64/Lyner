@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const AI_PROVIDER = 'featherless' as const;
+export const DEFAULT_FEATHERLESS_FALLBACK_MODEL = 'deepseek-ai/DeepSeek-V3-0324';
 
 export interface FeatherlessModelSlot {
   family: 'DeepSeek' | 'Kimi' | 'GLM' | 'Default';
@@ -10,13 +11,13 @@ export interface FeatherlessModelSlot {
   configured: boolean;
 }
 
-// Runtime-adjustable active model ID (initializes from FEATHERLESS_MODEL env var)
+// Runtime-adjustable active model ID (also supported per-request for stateless Vercel functions)
 let runtimeSelectedModel: string | null = null;
 
-// Global sequential request queue so Featherless AI concurrency limits (max 1-2 concurrent requests) are never exceeded
+// Sequential request queue so single-instance servers never exceed Featherless concurrency limits
 let requestQueue: Promise<any> = Promise.resolve();
 let lastRequestFinishedAt = 0;
-const MIN_REQUEST_GAP_MS = 350;
+const MIN_REQUEST_GAP_MS = 300;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,15 +36,21 @@ function enqueueFeatherlessTask<T>(task: () => Promise<T>): Promise<T> {
     }
   });
 
-  // Ensure the queue chain continues even if an individual request fails
   requestQueue = queued.catch(() => undefined);
   return queued;
 }
 
-export function getFeatherlessConfig() {
-  const apiKey = (process.env.FEATHERLESS_API_KEY || '').trim();
+export function getFeatherlessConfig(preferredModelOverride?: string | null) {
+  const apiKey = (
+    process.env.FEATHERLESS_API_KEY ||
+    process.env.VITE_FEATHERLESS_API_KEY ||
+    ''
+  ).trim();
+
   const baseUrl = (
-    process.env.FEATHERLESS_BASE_URL || 'https://api.featherless.ai/v1'
+    process.env.FEATHERLESS_BASE_URL ||
+    process.env.VITE_FEATHERLESS_BASE_URL ||
+    'https://api.featherless.ai/v1'
   )
     .trim()
     .replace(/\/+$/, '');
@@ -51,49 +58,57 @@ export function getFeatherlessConfig() {
   const envDefaultModel = (
     process.env.FEATHERLESS_MODEL ||
     process.env.DEFAULT_MODEL ||
+    process.env.VITE_FEATHERLESS_MODEL ||
     ''
   ).trim();
-  const deepseekModel = (process.env.FEATHERLESS_MODEL_DEEPSEEK || '').trim();
-  const kimiModel = (process.env.FEATHERLESS_MODEL_KIMI || '').trim();
-  const glmModel = (process.env.FEATHERLESS_MODEL_GLM || '').trim();
+  const deepseekModel = (
+    process.env.FEATHERLESS_MODEL_DEEPSEEK ||
+    'deepseek-ai/DeepSeek-V3-0324'
+  ).trim();
+  const kimiModel = (
+    process.env.FEATHERLESS_MODEL_KIMI ||
+    'moonshotai/Kimi-K2-Instruct'
+  ).trim();
+  const glmModel = (
+    process.env.FEATHERLESS_MODEL_GLM ||
+    'THUDM/GLM-4-32B-0414'
+  ).trim();
 
   const availableModels: FeatherlessModelSlot[] = [
     {
       family: 'Default',
-      modelId: envDefaultModel,
-      configured: Boolean(envDefaultModel),
+      modelId: envDefaultModel || deepseekModel,
+      configured: true,
     },
     {
       family: 'DeepSeek',
       modelId: deepseekModel,
-      configured: Boolean(deepseekModel),
+      configured: true,
     },
     {
       family: 'Kimi',
       modelId: kimiModel,
-      configured: Boolean(kimiModel),
+      configured: true,
     },
     {
       family: 'GLM',
       modelId: glmModel,
-      configured: Boolean(glmModel),
+      configured: true,
     },
   ];
 
   const activeModel =
+    (preferredModelOverride && preferredModelOverride.trim()) ||
     runtimeSelectedModel ||
     envDefaultModel ||
     deepseekModel ||
     kimiModel ||
     glmModel ||
-    null;
+    DEFAULT_FEATHERLESS_FALLBACK_MODEL;
 
   const missingVariables: string[] = [];
   if (!apiKey) {
     missingVariables.push('FEATHERLESS_API_KEY');
-  }
-  if (!activeModel) {
-    missingVariables.push('FEATHERLESS_MODEL');
   }
 
   let activeModelFamily: 'DeepSeek' | 'Kimi' | 'GLM' | 'Custom' | null = null;
@@ -161,7 +176,7 @@ Strict rules:
 - Do NOT invent project facts, survey numbers, or fake evidence.
 - Do NOT claim a task was completed when it was not.
 - Do NOT silently overwrite major Project DNA decisions without proposing the change clearly.
-- Always respond in valid JSON matching the requested schema.`;
+- Always respond in valid JSON matching the requested schema. Do NOT output long <think> chains; output the JSON object directly.`;
 
 /**
  * Strips <think>...</think> reasoning blocks (used by DeepSeek/Kimi/GLM reasoning models)
@@ -175,7 +190,7 @@ export function extractAndValidateJSON<T>(rawContent: string): T {
   // Remove closed <think>...</think> blocks if present
   let withoutThink = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
-  // If an unclosed <think> tag exists before JSON starts, strip up to the last '{' block
+  // If an unclosed <think> tag exists before JSON starts, strip up to the last '</think>' or '<think>'
   if (withoutThink.includes('<think>')) {
     const afterThink = withoutThink.split('</think>').pop() || withoutThink;
     withoutThink = afterThink.replace(/<think>/gi, '').trim();
@@ -202,106 +217,130 @@ export function extractAndValidateJSON<T>(rawContent: string): T {
 
 /**
  * Executes a structured JSON completion against Featherless AI.
- * Serializes concurrent calls through a sequential queue and automatically retries
- * HTTP 429 (Concurrency limit exceeded / rate limit) and transient 5xx responses with backoff.
+ * Optimized for both persistent servers and Vercel Serverless Functions.
  */
 export async function callFeatherlessJSON<T>(params: {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
   maxTokens?: number;
+  preferredModel?: string | null;
 }): Promise<T> {
-  const config = getFeatherlessConfig();
+  const config = getFeatherlessConfig(params.preferredModel);
 
   if (!config.apiKey) {
     throw new Error(
-      'FEATHERLESS_API_KEY is not configured on the server. Please set FEATHERLESS_API_KEY in environment secrets.'
-    );
-  }
-
-  if (!config.activeModel) {
-    throw new Error(
-      'FEATHERLESS_MODEL is not configured. Please set FEATHERLESS_MODEL (DeepSeek, Kimi, or GLM model ID) in environment secrets or Settings.'
+      'FEATHERLESS_API_KEY is missing in your deployment environment variables. Add FEATHERLESS_API_KEY in Vercel Project Settings → Environment Variables and redeploy.'
     );
   }
 
   return enqueueFeatherlessTask(async () => {
     const endpoint = `${config.baseUrl}/chat/completions`;
-    const retryBackoffsMs = [1400, 2800, 4800, 7000];
+    // Fast serverless-friendly backoff delays so we stay well within Vercel function timeouts
+    const retryBackoffsMs = [900, 1800, 3200];
     let lastErrorDetail = '';
     let lastStatus = 0;
 
     for (let attempt = 0; attempt <= retryBackoffsMs.length; attempt++) {
-      const requestBody: Record<string, any> = {
-        model: config.activeModel,
-        messages: [
-          {
-            role: 'system',
-            content: `${LYNER_SYSTEM_CONSTITUTION}\n\n${params.systemPrompt}\n\nIMPORTANT: Return ONLY a valid JSON object. Keep internal thinking concise and output valid JSON immediately.`,
-          },
-          {
-            role: 'user',
-            content: params.userPrompt,
-          },
-        ],
-        temperature: params.temperature ?? 0.35,
-        max_tokens: params.maxTokens ?? 3072,
-      };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 24000);
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (response.ok) {
-        const data: any = await response.json();
-        const msg = data?.choices?.[0]?.message;
-        const rawText =
-          msg?.content || msg?.reasoning_content || data?.choices?.[0]?.text || '';
-        return extractAndValidateJSON<T>(rawText);
-      }
-
-      lastStatus = response.status;
       try {
-        const errJson: any = await response.json();
+        const requestBody: Record<string, any> = {
+          model: config.activeModel,
+          messages: [
+            {
+              role: 'system',
+              content: `${LYNER_SYSTEM_CONSTITUTION}\n\n${params.systemPrompt}\n\nIMPORTANT: Return ONLY a valid JSON object. Do not wrap in markdown or long <think> blocks.`,
+            },
+            {
+              role: 'user',
+              content: params.userPrompt,
+            },
+          ],
+          temperature: params.temperature ?? 0.35,
+          max_tokens: params.maxTokens ?? 1600,
+        };
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data: any = await response.json();
+          const msg = data?.choices?.[0]?.message;
+          const rawText =
+            msg?.content ||
+            msg?.reasoning_content ||
+            data?.choices?.[0]?.text ||
+            '';
+          return extractAndValidateJSON<T>(rawText);
+        }
+
+        lastStatus = response.status;
+        try {
+          const errJson: any = await response.json();
+          lastErrorDetail =
+            errJson?.error?.message || errJson?.message || response.statusText;
+        } catch {
+          lastErrorDetail = response.statusText;
+        }
+
+        const isRetryable =
+          lastStatus === 429 ||
+          lastStatus === 502 ||
+          lastStatus === 503 ||
+          lastStatus === 504;
+
+        if (isRetryable && attempt < retryBackoffsMs.length) {
+          const waitMs = retryBackoffsMs[attempt];
+          console.warn(
+            `[Featherless AI] HTTP ${lastStatus} (${lastErrorDetail}). Retrying ${
+              attempt + 1
+            }/${retryBackoffsMs.length} in ${waitMs}ms...`
+          );
+          await sleep(waitMs);
+          continue;
+        }
+
+        break;
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
         lastErrorDetail =
-          errJson?.error?.message || errJson?.message || response.statusText;
-      } catch {
-        lastErrorDetail = response.statusText;
+          fetchErr?.name === 'AbortError'
+            ? `Model ${config.activeModel} timed out. Try switching to a faster non-reasoning model in Settings.`
+            : fetchErr?.message || 'Network error contacting Featherless AI';
+
+        if (attempt < retryBackoffsMs.length && fetchErr?.name !== 'AbortError') {
+          await sleep(retryBackoffsMs[attempt]);
+          continue;
+        }
+        break;
       }
-
-      // Retry on 429 (Concurrency limit / Rate limit) or transient 502/503/504
-      const isRetryable =
-        lastStatus === 429 ||
-        lastStatus === 502 ||
-        lastStatus === 503 ||
-        lastStatus === 504;
-
-      if (isRetryable && attempt < retryBackoffsMs.length) {
-        const waitMs = retryBackoffsMs[attempt];
-        console.warn(
-          `[Featherless AI] HTTP ${lastStatus} (${lastErrorDetail}). Retrying attempt ${
-            attempt + 1
-          }/${retryBackoffsMs.length} in ${waitMs}ms...`
-        );
-        await sleep(waitMs);
-        continue;
-      }
-
-      break;
     }
 
     console.warn(
       `[Featherless AI Notice] status=${lastStatus} model=${config.activeModel} detail=${lastErrorDetail}`
     );
+
+    if (lastStatus === 429) {
+      throw new Error(
+        `Featherless AI concurrency/rate limit reached for ${config.activeModel}. Wait a couple seconds and try again.`
+      );
+    }
+
     throw new Error(
-      `Featherless AI is busy (${lastStatus}): ${
-        lastErrorDetail || 'Please try again in a moment.'
-      }`
+      `Featherless AI (${config.activeModel}) error${
+        lastStatus ? ` [${lastStatus}]` : ''
+      }: ${lastErrorDetail || 'Unable to complete request.'}`
     );
   });
 }

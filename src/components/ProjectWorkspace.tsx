@@ -2486,9 +2486,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   <div className="font-bold">
                     Lyner couldn’t respond right now. Try again in a moment.
                   </div>
-                  <div className="text-xs text-rose-700 mt-0.5">
-                    {workspaceError}
-                  </div>
+                  {workspaceError.toLowerCase() !==
+                    "lyner couldn't respond right now. try again in a moment." && (
+                    <div className="text-xs text-rose-700 mt-0.5">
+                      {workspaceError}
+                    </div>
+                  )}
                 </div>
               </div>
               <button

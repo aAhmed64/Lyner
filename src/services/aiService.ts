@@ -16,6 +16,27 @@ import {
   ProposedDNAChange,
 } from '../types/lyner';
 
+const PREFERRED_MODEL_STORAGE_KEY = 'lyner_preferred_featherless_model';
+
+function getStoredPreferredModel(): string | undefined {
+  try {
+    const val = localStorage.getItem(PREFERRED_MODEL_STORAGE_KEY);
+    return val ? val.trim() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setStoredPreferredModel(modelId: string) {
+  try {
+    if (modelId && modelId.trim()) {
+      localStorage.setItem(PREFERRED_MODEL_STORAGE_KEY, modelId.trim());
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
 /**
  * Intelligent Project Context Builder (Section 6 & 15)
  * Extracts essential project understanding, DNA, team roles, tasks,
@@ -93,7 +114,7 @@ export function buildProjectContext(
       whyItMatters: p.whyItMatters,
       whenItHappened: p.whenItHappened,
     })),
-    recentConversation: project.chat.slice(-10).map((c) => ({
+    recentConversation: project.chat.slice(-8).map((c) => ({
       senderName: c.senderName,
       senderRole: c.senderRole,
       content: c.content,
@@ -106,14 +127,64 @@ export function buildProjectContext(
   };
 }
 
-async function handleApiResponse<T>(res: Response, fallbackError: string): Promise<T> {
+async function handleApiResponse<T>(
+  res: Response,
+  fallbackError: string
+): Promise<T> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(
-      err.error || "Lyner couldn't respond right now. Try again in a moment."
+      err.technicalHint ||
+        err.error ||
+        fallbackError ||
+        'Featherless AI request could not be completed.'
     );
   }
   return res.json() as Promise<T>;
+}
+
+async function postLynerApi<T>(
+  endpoint: string,
+  payload: Record<string, any>,
+  fallbackError: string
+): Promise<T> {
+  const preferredModel = getStoredPreferredModel();
+  const body = JSON.stringify({
+    ...payload,
+    ...(preferredModel ? { preferredModel } : {}),
+  });
+
+  let res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+
+  // If transient concurrency / cold-start 429/502/503/504 happens, wait 1.2s and retry once automatically
+  if (
+    !res.ok &&
+    (res.status === 429 ||
+      res.status === 502 ||
+      res.status === 503 ||
+      res.status === 504)
+  ) {
+    const clonedErr = await res
+      .clone()
+      .json()
+      .catch(() => ({}));
+    const hint = String(clonedErr?.technicalHint || '');
+    // Only retry if it's not a missing API key error
+    if (!hint.includes('FEATHERLESS_API_KEY is missing')) {
+      await new Promise((r) => setTimeout(r, 1200));
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+    }
+  }
+
+  return handleApiResponse<T>(res, fallbackError);
 }
 
 /**
@@ -125,7 +196,9 @@ export const aiService = {
    * Check Featherless AI connection & model configuration status
    */
   async getStatus(): Promise<AIProviderStatus> {
-    const res = await fetch('/api/lyner/ai-status');
+    const preferred = getStoredPreferredModel();
+    const query = preferred ? `?model=${encodeURIComponent(preferred)}` : '';
+    const res = await fetch(`/api/lyner/ai-status${query}`);
     return handleApiResponse<AIProviderStatus>(
       res,
       'Unable to check AI provider status.'
@@ -136,6 +209,7 @@ export const aiService = {
    * Switch active Featherless model (e.g. DeepSeek, Kimi, GLM)
    */
   async setActiveModel(modelId: string): Promise<AIProviderStatus> {
+    setStoredPreferredModel(modelId);
     const res = await fetch('/api/lyner/ai-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -196,19 +270,15 @@ export const aiService = {
       params.project,
       params.senderName
     );
-    const res = await fetch('/api/lyner/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi(
+      '/api/lyner/chat',
+      {
         message: params.message,
         senderName: params.senderName,
         projectContext,
         forceLyner: params.forceLyner,
-      }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't respond right now. Try again in a moment."
+      },
+      'Unable to reach Featherless AI right now.'
     );
   },
 
@@ -221,10 +291,9 @@ export const aiService = {
     history: DiscoveryMessage[];
     forceReflection?: boolean;
   }): Promise<DiscoveryTurnResponse> {
-    const res = await fetch('/api/lyner/discovery-turn', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi<DiscoveryTurnResponse>(
+      '/api/lyner/discovery-turn',
+      {
         userMessage: params.userMessage,
         understanding: params.understanding,
         history: params.history.map((m) => ({
@@ -232,11 +301,8 @@ export const aiService = {
           content: m.content,
         })),
         forceReflection: params.forceReflection,
-      }),
-    });
-    return handleApiResponse<DiscoveryTurnResponse>(
-      res,
-      "Lyner couldn't respond right now. Try again in a moment."
+      },
+      'Unable to reach Featherless AI right now.'
     );
   },
 
@@ -252,14 +318,10 @@ export const aiService = {
     currentDirectionSummary: string;
   }> {
     const projectContext = buildProjectContext(project, currentUserName);
-    const res = await fetch('/api/lyner/analyze-project', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectContext }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't analyze the project overview right now. Try again in a moment."
+    return postLynerApi(
+      '/api/lyner/analyze-project',
+      { projectContext },
+      'Unable to analyze the project overview right now.'
     );
   },
 
@@ -291,19 +353,15 @@ export const aiService = {
     };
   }> {
     const projectContext = buildProjectContext(params.project);
-    const res = await fetch('/api/lyner/update-dna', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi(
+      '/api/lyner/update-dna',
+      {
         projectContext,
         currentDna: params.project.dna,
         instruction: params.instruction,
         forceApplyDespiteContradiction: params.forceApplyDespiteContradiction,
-      }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't update the Project DNA right now. Try again in a moment."
+      },
+      'Unable to update Project DNA right now.'
     );
   },
 
@@ -329,21 +387,17 @@ export const aiService = {
       assigneeRole: string;
     }[];
   }> {
-    const res = await fetch('/api/lyner/synthesize-project', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi(
+      '/api/lyner/synthesize-project',
+      {
         understanding: params.understanding,
         history: params.history.map((m) => ({
           role: m.role,
           content: m.content,
         })),
         customProjectName: params.customProjectName,
-      }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't synthesize the Project DNA right now. Try again in a moment."
+      },
+      'Unable to synthesize Project DNA right now.'
     );
   },
 
@@ -360,14 +414,10 @@ export const aiService = {
     }[];
   }> {
     const projectContext = buildProjectContext(project);
-    const res = await fetch('/api/lyner/generate-tasks-from-dna', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectContext }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't generate tasks right now. Try again in a moment."
+    return postLynerApi(
+      '/api/lyner/generate-tasks-from-dna',
+      { projectContext },
+      'Unable to generate tasks right now.'
     );
   },
 
@@ -407,10 +457,9 @@ export const aiService = {
       params.project,
       params.submission.submittedBy
     );
-    const res = await fetch('/api/lyner/verify-submission', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi(
+      '/api/lyner/verify-submission',
+      {
         task: {
           title: params.task.title,
           goal: params.task.goal,
@@ -420,11 +469,8 @@ export const aiService = {
         },
         submission: params.submission,
         projectContext,
-      }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't verify this submission right now. Try again in a moment."
+      },
+      'Unable to verify this submission right now.'
     );
   },
 
@@ -446,18 +492,14 @@ export const aiService = {
     timestamp: string;
   }> {
     const projectContext = buildProjectContext(params.project);
-    const res = await fetch('/api/lyner/generate-pulse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    return postLynerApi(
+      '/api/lyner/generate-pulse',
+      {
         eventDescription: params.eventDescription,
         source: params.source,
         projectContext,
-      }),
-    });
-    return handleApiResponse(
-      res,
-      "Lyner couldn't generate a Pulse update right now. Try again in a moment."
+      },
+      'Unable to generate a Pulse update right now.'
     );
   },
 };
