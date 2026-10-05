@@ -207,8 +207,8 @@ export default function App() {
 
         {/* 2. HOME — CONTEXTUAL DAILY RE-ENTRY + INTERACTIVE JUMP CARDS */}
         {activeGlobalTab === 'home' && (
-          <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10 max-w-3xl mx-auto space-y-6">
-            <div className="w-full bg-white/95 backdrop-blur-xl border-2 border-indigo-100 shadow-sm rounded-3xl p-8 sm:p-10 text-center space-y-6">
+          <div className="min-h-screen flex flex-col items-center justify-center px-5 py-12 max-w-3xl mx-auto space-y-8">
+            <div className="w-full lyner-document-sheet rounded-3xl p-8 sm:p-11 text-center space-y-8">
               <div className="flex justify-center">
                 <Mascot
                   state={reEntryMode === 'question' ? 'HELPING' : 'CELEBRATING'}
@@ -216,8 +216,8 @@ export default function App() {
                 />
               </div>
 
-              <div className="space-y-2.5 max-w-xl mx-auto">
-                <div className="text-xs font-bold text-[#4F46E5]">
+              <div className="space-y-3 max-w-xl mx-auto">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
                   {latestProject.reEntryContext.greeting} · {latestProject.name}
                 </div>
 
@@ -229,7 +229,7 @@ export default function App() {
                     >
                       “{latestProject.reEntryContext.lastTimeSummary}”
                     </h1>
-                    <p className="text-base text-slate-600">
+                    <p className="text-base text-slate-600 leading-relaxed">
                       {latestProject.reEntryContext.focusStatement}
                     </p>
                   </>
@@ -241,7 +241,7 @@ export default function App() {
                     >
                       “Nice. Youssef’s first 3-section recycling station prototype is verified.”
                     </h1>
-                    <p className="text-base text-slate-600">
+                    <p className="text-base text-slate-600 leading-relaxed">
                       Next up: testing Salma’s two label designs with students and deciding final classroom and cafeteria bin locations.
                     </p>
                   </>
@@ -249,7 +249,7 @@ export default function App() {
               </div>
 
               {/* Primary Action Row */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-1">
                 <ContinueButton
                   state="ready"
                   label={`Continue ${latestProject.name}`}
@@ -271,78 +271,83 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Interactive Quick-Jump Surface Cards */}
-              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-left">
-                <button
-                  type="button"
-                  onClick={() => handleOpenProject(latestProject.id, 'overview')}
-                  className="lyner-card-interactive p-3 rounded-2xl space-y-1 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-[#4F46E5]">
-                    <Compass className="w-4 h-4" />
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900">
-                    Overview
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Stage 3 Active
-                  </div>
-                </button>
+              {/* Interactive Quick-Jump Surface Cards inside Recessed Well */}
+              <div className="p-4 sm:p-5 rounded-2xl lyner-section-surface space-y-3 text-left">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 px-1">
+                  Quick Jump to {latestProject.name} Surfaces
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProject(latestProject.id, 'overview')}
+                    className="lyner-card-interactive p-3.5 rounded-2xl space-y-1.5 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[#4F46E5]">
+                      <Compass className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      Overview
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Stage 3 Active
+                    </div>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenProject(latestProject.id, 'dna')}
-                  className="lyner-card-interactive p-3 rounded-2xl space-y-1 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-[#4F46E5]">
-                    <Dna className="w-4 h-4" />
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900">
-                    Project DNA
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    {latestProject.dna.length} Brief Sections
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProject(latestProject.id, 'dna')}
+                    className="lyner-card-interactive p-3.5 rounded-2xl space-y-1.5 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[#4F46E5]">
+                      <Dna className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      Project DNA
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {latestProject.dna.length} Brief Sections
+                    </div>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenProject(latestProject.id, 'tasks')}
-                  className="lyner-card-interactive p-3 rounded-2xl space-y-1 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-[#22C55E]">
-                    <CheckSquare className="w-4 h-4" />
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900">
-                    Team Tasks
-                  </div>
-                  <div className="text-[11px] text-slate-500 font-mono tabular-nums">
-                    {latestVerifiedCount}/{latestProject.tasks.length} Verified
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProject(latestProject.id, 'tasks')}
+                    className="lyner-card-interactive p-3.5 rounded-2xl space-y-1.5 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[#22C55E]">
+                      <CheckSquare className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      Team Tasks
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                      {latestVerifiedCount}/{latestProject.tasks.length} Verified
+                    </div>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenProject(latestProject.id, 'chat')}
-                  className="lyner-card-interactive p-3 rounded-2xl space-y-1 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-[#7C3AED]">
-                    <MessageSquare className="w-4 h-4" />
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-xs font-extrabold text-slate-900">
-                    Team Chat
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    {latestProject.chat.length} Messages
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProject(latestProject.id, 'chat')}
+                    className="lyner-card-interactive p-3.5 rounded-2xl space-y-1.5 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-[#7C3AED]">
+                      <MessageSquare className="w-4 h-4" />
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      Team Chat
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {latestProject.chat.length} Messages
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-400">
+              <div className="pt-1 flex items-center justify-center gap-2 text-xs text-slate-400">
                 <span>Contextual re-entry greeting:</span>
                 <button
                   type="button"
@@ -364,27 +369,27 @@ export default function App() {
 
         {/* 3. PROJECTS LIST */}
         {activeGlobalTab === 'projects' && (
-          <div className="p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="text-xs font-bold text-[#4F46E5]">
+          <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-4xl mx-auto space-y-9">
+            <header className="flex items-end justify-between gap-4 pb-8 border-b border-slate-200/90">
+              <div className="space-y-1.5">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
                   Collaborative Workspaces
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                   Team Projects
                 </h1>
               </div>
 
               <button
                 onClick={() => setActiveGlobalTab('new-project')}
-                className="lyner-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold cursor-pointer"
+                className="lyner-btn-primary inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>New Project</span>
               </button>
-            </div>
+            </header>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {projects.map((proj) => {
                 const verCount = proj.tasks.filter(
                   (t) => t.status === 'VERIFIED'
@@ -394,14 +399,13 @@ export default function App() {
                   <div
                     key={proj.id}
                     onClick={() => handleOpenProject(proj.id, 'overview')}
-                    className="lyner-card-interactive rounded-3xl p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5 cursor-pointer group"
+                    className="lyner-card-interactive rounded-3xl p-7 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 cursor-pointer group"
                   >
-                    <div className="space-y-2 min-w-0">
+                    <div className="space-y-2.5 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="font-bold text-[#4F46E5]">
+                        <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 font-bold text-[#4F46E5]">
                           {proj.dna.length} DNA sections
                         </span>
-                        <span aria-hidden="true">·</span>
                         <span className="font-mono tabular-nums font-bold text-emerald-700">
                           {verCount}/{proj.tasks.length} tasks verified
                         </span>
@@ -411,16 +415,16 @@ export default function App() {
                         </span>
                       </div>
 
-                      <h2 className="text-xl font-extrabold text-slate-900 group-hover:text-[#4F46E5] transition-colors">
+                      <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 group-hover:text-[#4F46E5] transition-colors">
                         {proj.name}
                       </h2>
 
-                      <p className="text-sm text-slate-600 leading-relaxed">
+                      <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
                         {proj.summary}
                       </p>
                     </div>
 
-                    <div className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 text-xs font-bold text-[#4F46E5] group-hover:bg-[#4F46E5] group-hover:text-white transition-colors">
+                    <div className="shrink-0 lyner-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[#4F46E5] group-hover:bg-[#4F46E5] group-hover:text-white group-hover:border-[#4F46E5] transition-all">
                       <span>Open Workspace</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
@@ -433,18 +437,18 @@ export default function App() {
 
         {/* 4. GLOBAL SETTINGS — FEATHERLESS AI ROUTING & CANONICAL MASCOT */}
         {activeGlobalTab === 'settings' && (
-          <div className="p-6 sm:p-10 max-w-3xl mx-auto space-y-6">
-            <div className="space-y-1">
-              <div className="text-xs font-bold text-[#4F46E5]">
+          <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-3xl mx-auto space-y-9">
+            <header className="space-y-1.5 pb-8 border-b border-slate-200/90">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
                 Developer / Admin Configuration & Brand System
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                 Settings & Featherless AI Routing
               </h1>
-            </div>
+            </header>
 
             {/* Featherless AI Provider & Model Routing Card */}
-            <div className="bg-white/95 border-2 border-indigo-100 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#4F46E5]">
@@ -566,7 +570,7 @@ export default function App() {
             </div>
 
             {/* Canonical Mascot State Inspector */}
-            <div className="bg-white/95 border-2 border-indigo-100 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-6">
               <div className="space-y-1">
                 <h2 className="text-base font-extrabold text-slate-900">
                   Canonical Lyner Mascot States

@@ -8,87 +8,104 @@
     --lyner-cyan: #22D3EE;
     --lyner-success: #22C55E;
     --lyner-warning: #F59E0B;
-    --lyner-navy: #0A0E24;
+    --lyner-navy: #0F172A;
+
+    /* 6-Layer Surface Hierarchy */
+    --surface-1-canvas: #EEF2F8;
+    --surface-2-sheet: #FFFFFF;
+    --surface-3-section: #F8FAFC;
+    --surface-3-secondary-well: #E9EEF6;
+    --surface-4-card: #FFFFFF;
+    --surface-5-interactive-hover: #F5F7FF;
+    --surface-6-active: #EEF2FF;
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #EEF2FF;
+    background-color: var(--surface-1-canvas);
     color: #0F172A;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
   }
 
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-    font-variant-numeric: tabular-nums;
+  h1, h2, h3, h4 {
+    letter-spacing: -0.025em;
   }
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Richer, multi-layered Lyner atmospheric canvas */
-@keyframes lynerAmbientShift {
-  0% {
-    background-position: 0% 25%;
-  }
-  50% {
-    background-position: 100% 75%;
-  }
-  100% {
-    background-position: 0% 25%;
-  }
-}
-
+/* ==========================================================================
+   LAYER 1: APPLICATION CANVAS BACKGROUND
+   Noticeably distinct from white content surfaces so sections & cards pop
+   ========================================================================== */
 .lyner-ambient-bg {
-  background-color: #EEF2FF;
+  background-color: #EDF1F8;
   background-image:
-    radial-gradient(at 12% 15%, rgba(79, 70, 229, 0.11) 0px, transparent 50%),
-    radial-gradient(at 88% 20%, rgba(124, 58, 237, 0.10) 0px, transparent 48%),
-    radial-gradient(at 75% 85%, rgba(34, 211, 238, 0.12) 0px, transparent 52%),
-    linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 38%, #ECFEFF 74%, #E0E7FF 100%);
-  background-size: 200% 200%;
-  animation: lynerAmbientShift 28s ease-in-out infinite;
+    radial-gradient(at 10% 6%, rgba(79, 70, 229, 0.08) 0px, transparent 46%),
+    radial-gradient(at 90% 10%, rgba(124, 58, 237, 0.07) 0px, transparent 44%),
+    radial-gradient(at 78% 88%, rgba(34, 211, 238, 0.07) 0px, transparent 48%),
+    linear-gradient(180deg, #F1F5FB 0%, #EAEFF8 100%);
 }
 
-/* Subtle architectural dot pattern for interactive workspace canvases */
 .lyner-dot-grid {
-  background-image: radial-gradient(rgba(79, 70, 229, 0.12) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-size: 28px 28px;
+  background-image: radial-gradient(rgba(79, 70, 229, 0.075) 1px, transparent 1px);
 }
 
-/* Layered Surface System */
-.lyner-surface {
-  background-color: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.lyner-card {
+/* ==========================================================================
+   LAYER 2 & 3: MAIN DOCUMENT SHEET, SECTIONS & SECONDARY CONTEXT WELLS
+   ========================================================================== */
+.lyner-document-sheet {
   background-color: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.75);
   box-shadow:
-    0 4px 16px -3px rgba(30, 27, 75, 0.06),
-    0 2px 6px -2px rgba(15, 23, 42, 0.04);
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    0 12px 32px -12px rgba(15, 23, 42, 0.06),
+    0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+.lyner-section-surface {
+  background-color: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(203, 213, 225, 0.65);
+}
+
+.lyner-secondary-panel {
+  background-color: #E6ECF5;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+/* ==========================================================================
+   LAYER 4 & 5: LIGHTWEIGHT ELEVATED CARDS & INTERACTIVE ELEMENTS
+   ========================================================================== */
+.lyner-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.75);
+  box-shadow:
+    0 4px 14px -4px rgba(15, 23, 42, 0.06),
+    0 2px 4px -2px rgba(15, 23, 42, 0.03);
 }
 
 .lyner-card-interactive {
-  background-color: #FFFFFF;
-  border: 2px solid #E0E7FF;
-  box-shadow: 0 3px 0 0 #E0E7FF, 0 6px 16px -4px rgba(30, 27, 75, 0.06);
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 140ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  background: #FFFFFF;
+  border: 1.5px solid #DCE3F0;
+  box-shadow:
+    0 3px 0 0 #DCE3F0,
+    0 8px 20px -6px rgba(15, 23, 42, 0.06);
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms ease,
+    background-color 160ms ease;
 }
 
 .lyner-card-interactive:hover {
-  border-color: #4F46E5;
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 0 #C7D2FE, 0 12px 24px -6px rgba(79, 70, 229, 0.14);
+  background: #FCFDFE;
+  border-color: #818CF8;
+  box-shadow:
+    0 5px 0 0 #C7D2FE,
+    0 14px 28px -8px rgba(79, 70, 229, 0.13);
 }
 
 .lyner-card-interactive:active {
@@ -96,71 +113,110 @@
   box-shadow: 0 1px 0 0 #C7D2FE;
 }
 
-/* Tactile Primary CTA Button (Duolingo-inspired clarity & physical press feel in Lyner Indigo) */
+.lyner-card-selected {
+  background: #F5F7FF;
+  border: 2px solid #4F46E5;
+  box-shadow:
+    0 3px 0 0 #4F46E5,
+    0 10px 24px -6px rgba(79, 70, 229, 0.16);
+}
+
+/* ==========================================================================
+   TACTILE BUTTONS (Always clearly interactive)
+   ========================================================================== */
 .lyner-btn-primary {
-  background-color: #4F46E5;
+  background: linear-gradient(180deg, #5B52F0 0%, #4F46E5 100%);
   color: #FFFFFF;
-  box-shadow: 0 3px 0 0 #3730A3, 0 6px 14px -2px rgba(79, 70, 229, 0.35);
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 120ms cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 120ms ease;
+  border: 1px solid #4338CA;
+  box-shadow:
+    0 3px 0 0 #3730A3,
+    0 6px 14px -3px rgba(79, 70, 229, 0.32);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
 }
 
 .lyner-btn-primary:hover:not(:disabled) {
-  background-color: #4338CA;
+  filter: brightness(1.05);
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 0 #312E81, 0 8px 18px -2px rgba(79, 70, 229, 0.42);
+  box-shadow:
+    0 4px 0 0 #3730A3,
+    0 10px 18px -3px rgba(79, 70, 229, 0.38);
 }
 
 .lyner-btn-primary:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 0 #312E81;
+  box-shadow: 0 1px 0 0 #3730A3;
 }
 
 .lyner-btn-secondary {
-  background-color: #FFFFFF;
+  background: #FFFFFF;
   color: #1E293B;
-  border: 2px solid #E0E7FF;
-  box-shadow: 0 3px 0 0 #E0E7FF;
-  transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 120ms cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 120ms ease,
-              color 120ms ease;
+  border: 1.5px solid #CBD5E1;
+  box-shadow:
+    0 2px 0 0 #CBD5E1,
+    0 3px 6px -2px rgba(15, 23, 42, 0.05);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .lyner-btn-secondary:hover:not(:disabled) {
-  border-color: #4F46E5;
+  border-color: #6366F1;
   color: #4F46E5;
+  background: #F8FAFF;
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 0 #C7D2FE;
+  box-shadow:
+    0 3px 0 0 #A5B4FC,
+    0 6px 12px -2px rgba(79, 70, 229, 0.1);
 }
 
 .lyner-btn-secondary:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 0 #C7D2FE;
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 0 #CBD5E1;
 }
 
-.lyner-card-active {
-  background-color: #FFFFFF;
-  box-shadow: 0 8px 24px -4px rgba(79, 70, 229, 0.14), 0 0 0 2px #4F46E5;
+/* ==========================================================================
+   TYPOGRAPHY & READABILITY HELPERS
+   ========================================================================== */
+.lyner-prose {
+  max-width: 66ch;
+  line-height: 1.75;
+  color: #1E293B;
 }
 
-@keyframes floatSlow {
+/* Mascot subtle motion */
+@keyframes lyner-float {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
   }
 }
 
-.animate-float {
-  animation: floatSlow 3.8s ease-in-out infinite;
+@keyframes lyner-pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .animate-float,
-  .lyner-ambient-bg {
-    animation: none;
-  }
+.animate-lyner-float {
+  animation: lyner-float 3.6s ease-in-out infinite;
+}
+
+.animate-lyner-ring {
+  animation: lyner-pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
 }

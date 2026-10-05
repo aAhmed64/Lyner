@@ -986,6 +986,7 @@ export const VerificationState: React.FC<{
    ========================================================================== */
 export const ChatMessage: React.FC<{
   message: ChatMessageItem;
+  isSameSenderAsPrevious?: boolean;
   onReplyClick?: (message: ChatMessageItem) => void;
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onSelectTradeoffOption?: (messageId: string, chosenProtocol: string) => void;
@@ -1001,6 +1002,7 @@ export const ChatMessage: React.FC<{
   onNavigateTab?: (tab: ProjectViewTab, targetId?: string) => void;
 }> = ({
   message,
+  isSameSenderAsPrevious = false,
   onReplyClick,
   onToggleReaction,
   onSelectTradeoffOption,
@@ -1024,21 +1026,25 @@ export const ChatMessage: React.FC<{
 
   return (
     <div
-      className={`group relative rounded-2xl p-4 sm:p-5 transition-all ${
+      className={`group relative transition-all ${
         isLyner
-          ? 'bg-gradient-to-r from-indigo-50/95 via-violet-50/90 to-cyan-50/75 border-2 border-indigo-200/80 shadow-xs'
+          ? 'mt-7 mb-2 rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-[#F3F5FF] via-white to-[#F7F4FF] border border-indigo-200/80 border-l-4 border-l-[#4F46E5] shadow-xs'
           : isUser
-          ? 'bg-[#4F46E5] text-white shadow-xs ml-6 sm:ml-14'
-          : 'lyner-card border border-slate-200/80 mr-4 sm:mr-8'
+          ? `${
+              isSameSenderAsPrevious ? 'mt-2' : 'mt-6'
+            } rounded-2xl p-4 sm:p-5 bg-[#4F46E5] text-white shadow-xs ml-8 sm:ml-20`
+          : `${
+              isSameSenderAsPrevious ? 'mt-2' : 'mt-6'
+            } rounded-2xl p-4 sm:p-5 bg-white border border-slate-200/85 shadow-2xs mr-4 sm:mr-14`
       }`}
     >
       {/* Reply Quote Preview if replying to an earlier message */}
       {message.replyTo && (
         <div
-          className={`mb-2.5 pl-3 border-l-2 text-xs rounded-r-lg py-1 ${
+          className={`mb-3 pl-3.5 border-l-2 text-xs rounded-r-xl py-1.5 px-3 ${
             isUser
               ? 'border-indigo-200 text-indigo-100 bg-indigo-700/50'
-              : 'border-[#4F46E5] text-slate-500 bg-slate-50'
+              : 'border-[#4F46E5] text-slate-600 bg-slate-50'
           }`}
         >
           <span className="font-bold">{message.replyTo.senderName}: </span>
@@ -1046,14 +1052,20 @@ export const ChatMessage: React.FC<{
         </div>
       )}
 
-      <div className="flex items-start gap-3.5">
-        {/* Avatar */}
+      <div className="flex items-start gap-4">
+        {/* Avatar — hidden on consecutive messages from same human speaker to group visually */}
         {isLyner ? (
           <Mascot
             state={message.mascotState || 'EXPLAINING'}
             size="sm"
             className="-mt-1 shrink-0"
           />
+        ) : isSameSenderAsPrevious ? (
+          <div className="w-10 shrink-0 flex justify-center pt-1">
+            <span className="text-[10px] font-mono text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              {message.timestamp}
+            </span>
+          </div>
         ) : (
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 text-white shadow-2xs ${
@@ -1066,101 +1078,102 @@ export const ChatMessage: React.FC<{
           </div>
         )}
 
-        <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex-1 min-w-0 space-y-2.5">
           {/* Header: Name · Role · Timestamp + Hover Actions */}
-          <div className="flex items-center justify-between gap-2">
-            <div
-              className={`flex flex-wrap items-center gap-2 text-xs ${
-                isUser ? 'text-indigo-100' : 'text-slate-500'
-              }`}
-            >
-              <span
-                className={`font-bold ${
-                  isLyner
-                    ? 'text-[#4F46E5]'
-                    : isUser
-                    ? 'text-white'
-                    : 'text-slate-900'
+          {(!isSameSenderAsPrevious || isLyner) && (
+            <div className="flex items-center justify-between gap-2">
+              <div
+                className={`flex flex-wrap items-center gap-2 text-xs ${
+                  isUser ? 'text-indigo-100' : 'text-slate-500'
                 }`}
               >
-                {message.senderName}
-              </span>
-              {message.senderRole && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-medium">{message.senderRole}</span>
-                </>
-              )}
-              {isLyner && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-semibold text-[#7C3AED]">
+                <span
+                  className={`text-sm font-extrabold ${
+                    isLyner
+                      ? 'text-[#4F46E5]'
+                      : isUser
+                      ? 'text-white'
+                      : 'text-slate-900'
+                  }`}
+                >
+                  {message.senderName}
+                </span>
+                {message.senderRole && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-medium text-slate-500">
+                      {message.senderRole}
+                    </span>
+                  </>
+                )}
+                {isLyner && (
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-100/80 text-[#4F46E5] font-bold text-[11px]">
                     AI Facilitator
                   </span>
-                </>
-              )}
-              <span aria-hidden="true">·</span>
-              <span className="tabular-nums opacity-80">
-                {message.timestamp}
-              </span>
-            </div>
+                )}
+                <span aria-hidden="true">·</span>
+                <span className="tabular-nums text-slate-400">
+                  {message.timestamp}
+                </span>
+              </div>
 
-            {/* Message Actions (Reply & React) */}
-            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-              {onToggleReaction && (
-                <div className="relative">
+              {/* Message Actions (Reply & React) */}
+              <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                {onToggleReaction && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        isUser
+                          ? 'hover:bg-indigo-500 text-indigo-100'
+                          : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
+                      }`}
+                      title="Add reaction"
+                    >
+                      <SmilePlus className="w-3.5 h-3.5" />
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="absolute right-0 top-8 z-20 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex items-center gap-1">
+                        {quickEmojis.map((em) => (
+                          <button
+                            key={em}
+                            type="button"
+                            onClick={() => {
+                              onToggleReaction(message.id, em);
+                              setShowEmojiPicker(false);
+                            }}
+                            className="w-7 h-7 rounded-lg hover:bg-indigo-50 flex items-center justify-center text-sm cursor-pointer"
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {onReplyClick && (
                   <button
                     type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    onClick={() => onReplyClick(message)}
                     className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                       isUser
                         ? 'hover:bg-indigo-500 text-indigo-100'
                         : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
                     }`}
-                    title="Add reaction"
+                    title="Reply in chat"
                   >
-                    <SmilePlus className="w-3.5 h-3.5" />
+                    <Reply className="w-3.5 h-3.5" />
                   </button>
-                  {showEmojiPicker && (
-                    <div className="absolute right-0 top-8 z-20 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex items-center gap-1">
-                      {quickEmojis.map((em) => (
-                        <button
-                          key={em}
-                          type="button"
-                          onClick={() => {
-                            onToggleReaction(message.id, em);
-                            setShowEmojiPicker(false);
-                          }}
-                          className="w-7 h-7 rounded-lg hover:bg-indigo-50 flex items-center justify-center text-sm cursor-pointer"
-                        >
-                          {em}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {onReplyClick && (
-                <button
-                  type="button"
-                  onClick={() => onReplyClick(message)}
-                  className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                    isUser
-                      ? 'hover:bg-indigo-500 text-indigo-100'
-                      : 'hover:bg-slate-100 text-slate-400 hover:text-slate-700'
-                  }`}
-                  title="Reply in chat"
-                >
-                  <Reply className="w-3.5 h-3.5" />
-                </button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Message Body */}
           <p
-            className={`text-sm sm:text-base leading-relaxed whitespace-pre-line ${
+            className={`text-[15px] leading-[1.7] max-w-[66ch] whitespace-pre-line ${
               isUser ? 'text-white' : 'text-slate-800'
             }`}
           >

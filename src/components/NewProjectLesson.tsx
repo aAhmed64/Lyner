@@ -411,7 +411,7 @@ export const NewProjectLesson: React.FC<NewProjectLessonProps> = ({
         )}
 
         {/* Active Focus Card: Lyner + Current Exchange + One Clear Action */}
-        <div className="my-auto bg-white/92 backdrop-blur-xl border-2 border-indigo-100/90 rounded-3xl p-6 sm:p-9 shadow-sm space-y-6">
+        <div className="my-auto lyner-document-sheet rounded-3xl p-7 sm:p-10 space-y-7">
           {/* Lyner Mascot & Latest Prompt */}
           <div className="flex flex-col items-center text-center space-y-3">
             <Mascot state={displayedMascotState} size="lg" />

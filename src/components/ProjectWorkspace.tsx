@@ -1010,22 +1010,22 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       journeyStages[activeJourneyStageIdx] || journeyStages[2];
 
     return (
-      <div className="p-6 sm:p-10 max-w-5xl mx-auto space-y-8">
-        {/* Top Workspace Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-[#4F46E5]">
+      <div className="py-8 sm:py-12 px-6 sm:px-10 max-w-5xl mx-auto space-y-12">
+        {/* ZONE 1: PROJECT HEADER */}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-slate-200/80">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="text-xs font-extrabold tracking-wider uppercase text-[#4F46E5]">
               Overview · Where are we right now?
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               {project.name}
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-2xl">
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
               {project.summary}
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => onSelectTab('dna')}
@@ -1038,30 +1038,218 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={() => navigateToSurface('tasks', nextOpenTask.id)}
-                className="lyner-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold cursor-pointer"
+                className="lyner-btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold cursor-pointer"
               >
                 <span>Continue Work</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
           </div>
-        </div>
+        </header>
 
-        {/* ==============================================================
-            INTERACTIVE PROJECT JOURNEY PATH (Click any node to inspect)
-           ============================================================== */}
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl border-2 border-indigo-100 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="text-xs font-bold text-[#4F46E5]">
-                Interactive Project Progression
+        {/* ZONE 2: WHAT'S NEW & YOUR NEXT STEP (Lyner Focus Hero) */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-extrabold tracking-wider uppercase text-slate-500">
+              01 · Right Now & Your Next Step
+            </h2>
+            <button
+              type="button"
+              disabled={isAnalyzingOverview}
+              onClick={handleRefreshOverviewWithAI}
+              className="lyner-btn-secondary px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#4F46E5] inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>
+                {isAnalyzingOverview ? 'Thinking...' : 'Refresh AI Insight'}
+              </span>
+            </button>
+          </div>
+
+          <div className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-7">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+              <Mascot
+                state={
+                  isAnalyzingOverview
+                    ? 'THINKING'
+                    : liveOverviewInsight?.mascotState || 'HELPING'
+                }
+                size="md"
+                className="shrink-0"
+              />
+              <div className="space-y-3 flex-1">
+                <div className="text-xs font-bold text-[#4F46E5]">
+                  What’s Moving Right Now
+                </div>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug max-w-3xl">
+                  {isAnalyzingOverview
+                    ? 'Thinking... analyzing DNA, Tasks, and Pulse...'
+                    : liveOverviewInsight?.mascotMessage ||
+                      `Your team has verified ${verifiedTasksCount} of ${project.tasks.length} tasks and is now focused on: ${
+                        nextOpenTask?.title || project.rightNowFocus
+                      }`}
+                </h3>
+                <p className="text-[15px] text-slate-600 leading-relaxed max-w-2xl">
+                  <strong className="text-slate-900">Current Direction:</strong>{' '}
+                  {liveOverviewInsight?.currentDirectionSummary ||
+                    project.currentDirection}
+                </p>
               </div>
-              <h2 className="text-lg font-extrabold text-slate-900">
+            </div>
+
+            {workspaceError && (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-center justify-between gap-3">
+                <span>{workspaceError}</span>
+                <button
+                  type="button"
+                  onClick={handleRefreshOverviewWithAI}
+                  className="font-bold underline shrink-0 cursor-pointer"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {/* Distinct Inset Callout for Next Recommended Step */}
+            <div className="p-5 rounded-2xl bg-[#F4F6FF] border border-indigo-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1 max-w-xl">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                  Recommended Next Step
+                </div>
+                <div className="text-sm sm:text-base font-bold text-slate-900">
+                  {liveOverviewInsight?.nextRecommendedAction ||
+                    (nextOpenTask
+                      ? `${nextOpenTask.title} · Assigned to ${nextOpenTask.assigneeName}`
+                      : project.nextActionPrompt)}
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('chat')}
+                  className="lyner-btn-secondary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Discuss in Chat
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('tasks')}
+                  className="lyner-btn-primary px-4 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Open Task</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ZONE 3: WHAT NEEDS ATTENTION & PROJECT PULSE */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* What Needs Attention (Open Question) */}
+          <div className="lg:col-span-5 flex flex-col justify-between rounded-3xl p-7 bg-amber-50/75 border border-amber-200/90 shadow-2xs space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800">
+                  02 · What Needs Attention
+                </span>
+                <HelpCircle className="w-4 h-4 text-[#F59E0B]" />
+              </div>
+
+              <h3 className="text-lg font-extrabold text-slate-900 leading-snug">
+                “{primaryOpenQuestion}”
+              </h3>
+
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Lyner keeps open questions explicit so your team tests assumptions before locking them into Project DNA.
+              </p>
+            </div>
+
+            <div className="space-y-2.5 pt-4 border-t border-amber-200/60">
+              <button
+                type="button"
+                onClick={() => onSelectTab('chat')}
+                className="w-full lyner-btn-secondary py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer"
+              >
+                <span>Compare options in Team Chat</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#4F46E5]" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTab('dna')}
+                className="w-full py-2 px-3 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-100/70 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <span>See Open Questions in DNA</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Project Pulse Summary */}
+          <div className="lg:col-span-7 lyner-section-surface rounded-3xl p-7 space-y-5 flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                  03 · Project Pulse
+                </div>
+                <h3 className="text-lg font-extrabold text-slate-900 mt-0.5">
+                  Recent Meaningful Changes
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectTab('pulse')}
+                className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer"
+              >
+                Full Timeline →
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {project.pulse.slice(0, 3).map((ev) => (
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={() =>
+                    ev.linkedSource
+                      ? navigateToSurface(
+                          ev.linkedSource.tab,
+                          ev.linkedSource.targetId
+                        )
+                      : onSelectTab('pulse')
+                  }
+                  className="w-full text-left p-4 rounded-2xl bg-white hover:bg-[#F8FAFF] border border-slate-200/85 hover:border-[#4F46E5] shadow-2xs transition-all space-y-1.5 cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-extrabold text-slate-900 group-hover:text-[#4F46E5] transition-colors">
+                      {ev.headline}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                      {ev.whenItHappened}
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                    {ev.whatChanged}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ZONE 4: TEAM / PROJECT JOURNEY */}
+        <section className="space-y-5 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div>
+              <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                04 · Project Journey & Team Roles
+              </div>
+              <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">
                 From Unclear Idea to Verified School Impact
               </h2>
             </div>
             <div className="text-xs font-semibold text-slate-500">
-              Click any milestone node to inspect details ·{' '}
+              Click any stage to inspect ·{' '}
               <span className="font-mono tabular-nums font-bold text-emerald-700">
                 {verifiedTasksCount}/{project.tasks.length} tasks verified
               </span>
@@ -1069,7 +1257,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
 
           {/* 4-Node Interactive Path */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             {journeyStages.map((stg, idx) => {
               const isSelected = activeJourneyStageIdx === idx;
               const isVerified = stg.status === 'VERIFIED';
@@ -1080,19 +1268,15 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   key={stg.step}
                   type="button"
                   onClick={() => setActiveJourneyStageIdx(idx)}
-                  className={`text-left p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                  className={`text-left p-5 rounded-2xl transition-all cursor-pointer flex flex-col justify-between gap-4 ${
                     isSelected
-                      ? 'bg-indigo-50/90 border-[#4F46E5] shadow-[0_3px_0_0_#4F46E5] -translate-y-0.5'
-                      : isVerified
-                      ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-400'
-                      : isActive
-                      ? 'bg-white border-indigo-200 hover:border-[#4F46E5]'
-                      : 'bg-slate-50/80 border-slate-200/80 hover:border-slate-300'
+                      ? 'lyner-card-selected -translate-y-0.5'
+                      : 'lyner-card-interactive'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold ${
                         isVerified
                           ? 'bg-[#22C55E] text-white'
                           : isActive
@@ -1128,7 +1312,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     <div className="text-sm font-extrabold text-slate-900">
                       {stg.title}
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
+                    <div className="text-xs text-slate-500 mt-1">
                       {stg.owner}
                     </div>
                   </div>
@@ -1138,10 +1322,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
 
           {/* Active Stage Inspector Drawer */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/60 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1 max-w-2xl">
+          <div className="p-6 rounded-2xl lyner-document-sheet flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="space-y-1.5 max-w-2xl">
               <div className="flex items-center gap-2 text-xs font-bold text-[#4F46E5]">
-                <span>Stage {selectedStage.step}: {selectedStage.title}</span>
+                <span>
+                  Stage {selectedStage.step}: {selectedStage.title}
+                </span>
                 <span aria-hidden="true">·</span>
                 <span className="text-slate-500">{selectedStage.owner}</span>
               </div>
@@ -1153,289 +1339,73 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <button
               type="button"
               onClick={selectedStage.onAction}
-              className="lyner-btn-primary px-4 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="lyner-btn-primary px-5 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <span>{selectedStage.actionLabel}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
 
-        {/* ==============================================================
-            LYNER FACILITATOR FOCUS CARD ("One Clear Thing to Understand/Do")
-           ============================================================== */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-white/95 rounded-3xl p-6 sm:p-7 border-2 border-indigo-100 shadow-xs flex flex-col justify-between space-y-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <Mascot
-                  state={
-                    isAnalyzingOverview
-                      ? 'THINKING'
-                      : liveOverviewInsight?.mascotState || 'HELPING'
-                  }
-                  size="md"
-                  className="shrink-0"
-                />
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-[#4F46E5]">
-                    Right Now · Lyner Focus Brief
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug">
-                    {isAnalyzingOverview
-                      ? 'Thinking... analyzing DNA, Tasks, and Pulse...'
-                      : liveOverviewInsight?.mascotMessage ||
-                        `Your team has verified ${verifiedTasksCount} of ${project.tasks.length} tasks and is now focused on: ${
-                          nextOpenTask?.title || project.rightNowFocus
-                        }`}
-                  </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    <strong>Current Direction:</strong>{' '}
-                    {liveOverviewInsight?.currentDirectionSummary ||
-                      project.currentDirection}
-                  </p>
-                </div>
-              </div>
+          {/* Team Member Momentum Strip */}
+          <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {humanMembers.map((member) => {
+              const memberTasks = project.tasks.filter(
+                (t) =>
+                  t.assigneeName
+                    .toLowerCase()
+                    .includes(member.name.toLowerCase()) ||
+                  t.assigneeName === 'Everyone'
+              );
+              const memberVerified = memberTasks.filter(
+                (t) => t.status === 'VERIFIED'
+              ).length;
 
-              <button
-                type="button"
-                disabled={isAnalyzingOverview}
-                onClick={handleRefreshOverviewWithAI}
-                className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-bold text-[#4F46E5] inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
-                title="Generate live Overview analysis from Featherless AI"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{isAnalyzingOverview ? 'Thinking...' : 'AI Insight'}</span>
-              </button>
-            </div>
-
-            {workspaceError && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-center justify-between gap-3">
-                <span>{workspaceError}</span>
+              return (
                 <button
+                  key={member.id}
                   type="button"
-                  onClick={handleRefreshOverviewWithAI}
-                  className="font-bold underline shrink-0 cursor-pointer"
+                  onClick={() => {
+                    setMemberFilter(member.name);
+                    onSelectTab('tasks');
+                  }}
+                  className="lyner-card-interactive p-4 rounded-2xl text-left space-y-2.5 cursor-pointer"
                 >
-                  Try again
-                </button>
-              </div>
-            )}
-
-            <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-1.5">
-              <div className="text-xs font-bold text-emerald-700">
-                Latest Meaningful Update ({project.pulse[0]?.whenItHappened || 'Recent'})
-              </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                {project.pulse[0]?.whatChanged || recentSummaryText}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-              <div className="text-xs font-semibold text-slate-500">
-                Next step:{' '}
-                <strong className="text-slate-800">
-                  {liveOverviewInsight?.nextRecommendedAction ||
-                    (nextOpenTask
-                      ? `${nextOpenTask.title} (${nextOpenTask.assigneeName})`
-                      : project.nextActionPrompt)}
-                </strong>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('chat')}
-                  className="lyner-btn-secondary px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer"
-                >
-                  Open Team Chat
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('tasks')}
-                  className="lyner-btn-primary px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>Go to Tasks</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Open Question & Active Debate Card */}
-          <div className="lg:col-span-5 bg-white/95 rounded-3xl p-6 sm:p-7 border-2 border-amber-200/90 shadow-xs flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-800">
-                  Open Question Being Tested
-                </span>
-                <HelpCircle className="w-4 h-4 text-[#F59E0B]" />
-              </div>
-
-              <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
-                “{primaryOpenQuestion}”
-              </h3>
-
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Lyner keeps open questions explicit so your team doesn’t pretend things are decided before testing them.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => onSelectTab('chat')}
-                className="w-full lyner-btn-secondary py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer"
-              >
-                <span>Compare options in Team Chat</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#4F46E5]" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectTab('dna')}
-                className="w-full py-2 px-4 rounded-xl text-xs font-bold text-[#4F46E5] hover:bg-indigo-50/70 flex items-center justify-between transition-colors cursor-pointer"
-              >
-                <span>See all Open Questions in DNA</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ==============================================================
-            STUDENT TEAM ROLES & LIVE PULSE STRIP
-           ============================================================== */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Team Member Momentum Cards */}
-          <div className="bg-white/95 rounded-3xl p-6 border border-indigo-100 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-bold text-[#4F46E5]">
-                  Student Team Roles
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Who is doing what
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => onSelectTab('members')}
-                className="text-xs font-bold text-[#4F46E5] hover:underline cursor-pointer"
-              >
-                All Members →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {humanMembers.map((member) => {
-                const memberTasks = project.tasks.filter(
-                  (t) =>
-                    t.assigneeName
-                      .toLowerCase()
-                      .includes(member.name.toLowerCase()) ||
-                    t.assigneeName === 'Everyone'
-                );
-                const memberVerified = memberTasks.filter(
-                  (t) => t.status === 'VERIFIED'
-                ).length;
-
-                return (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => {
-                      setMemberFilter(member.name);
-                      onSelectTab('tasks');
-                    }}
-                    className="lyner-card-interactive p-3.5 rounded-2xl text-left space-y-2 cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 ${member.avatarColor}`}
-                        >
-                          {member.name.slice(0, 2).toUpperCase()}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 ${member.avatarColor}`}
+                      >
+                        {member.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-extrabold text-slate-900 truncate">
+                          {member.name}
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-extrabold text-slate-900 truncate">
-                            {member.name}
-                          </div>
-                          <div className="text-[11px] text-[#4F46E5] font-semibold truncate">
-                            {member.role}
-                          </div>
+                        <div className="text-[11px] text-[#4F46E5] font-semibold truncate">
+                          {member.role}
                         </div>
                       </div>
-                      <span className="text-[11px] font-mono tabular-nums font-bold text-emerald-700 shrink-0">
-                        {memberVerified}/{memberTasks.length}
-                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 line-clamp-2">
-                      {member.focus}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Recent Pulse Evolution Preview */}
-          <div className="bg-white/95 rounded-3xl p-6 border border-indigo-100 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-bold text-[#4F46E5]">
-                  Project Evolution
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Recent Pulse Updates
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => onSelectTab('pulse')}
-                className="text-xs font-bold text-[#4F46E5] hover:underline cursor-pointer"
-              >
-                Full Timeline →
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              {project.pulse.slice(0, 3).map((ev) => (
-                <button
-                  key={ev.id}
-                  type="button"
-                  onClick={() =>
-                    ev.linkedSource
-                      ? navigateToSurface(
-                          ev.linkedSource.tab,
-                          ev.linkedSource.targetId
-                        )
-                      : onSelectTab('pulse')
-                  }
-                  className="w-full text-left p-3.5 rounded-2xl bg-slate-50/90 hover:bg-indigo-50/70 border border-slate-200/80 hover:border-[#4F46E5]/40 transition-all space-y-1 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="font-bold text-slate-900">
-                      {ev.headline}
-                    </span>
-                    <span className="text-[11px] text-slate-400 shrink-0">
-                      {ev.whenItHappened}
+                    <span className="text-[11px] font-mono tabular-nums font-bold text-emerald-700 shrink-0">
+                      {memberVerified}/{memberTasks.length}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 line-clamp-2">
-                    {ev.whatChanged}
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {member.focus}
                   </p>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        </div>
+        </section>
       </div>
     );
   }
 
   /* ==================================================================
      2. PROJECT DNA ("The clearest representation of what this project is")
-        - Two-Column Editorial Brief + Interactive Section Outline
-        - Read-only by default, with inline "Ask Lyner to evolve" support
+        - Clear Document Hierarchy + Distinct Secondary Context Sidebar
+        - Each section is a distinct, breathable editorial unit
      ================================================================== */
   if (activeTab === 'dna') {
     const verifiedTasksCount = project.tasks.filter(
@@ -1443,37 +1413,40 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     ).length;
 
     return (
-      <div className="min-h-screen py-8 sm:py-10 px-4 sm:px-8 max-w-6xl mx-auto space-y-6">
-        {/* Top Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-indigo-100 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#4F46E5]">
-              <Dna className="w-5 h-5" />
+      <div className="min-h-screen py-8 sm:py-12 px-5 sm:px-10 max-w-6xl mx-auto space-y-10">
+        {/* Top Document Header & Action Bar */}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-slate-200/90">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+              <Dna className="w-4 h-4" />
+              <span>Project DNA · Shared Project Brief</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-slate-500 font-mono">
+                {project.dna.length} Sections
+              </span>
             </div>
-            <div>
-              <div className="text-xs font-bold text-[#4F46E5]">
-                Project DNA · Shared Team Constitution
-              </div>
-              <div className="text-xs text-slate-500">
-                Read-only by default · Evolves as tasks are verified and decisions are made
-              </div>
-            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              {project.name}
+            </h1>
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+              {project.summary}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => {
                 setShowAskLynerDnaBar(!showAskLynerDnaBar);
                 setIsEditingDnaManually(false);
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 showAskLynerDnaBar
                   ? 'lyner-btn-primary'
                   : 'lyner-btn-secondary text-[#4F46E5]'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
               <span>Ask Lyner to change this</span>
             </button>
 
@@ -1486,17 +1459,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 }
                 setIsEditingDnaManually(!isEditingDnaManually);
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isEditingDnaManually
                   ? 'bg-slate-900 text-white'
                   : 'lyner-btn-secondary'
               }`}
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="w-4 h-4" />
               <span>{isEditingDnaManually ? 'Cancel Edit' : 'Edit DNA'}</span>
             </button>
           </div>
-        </div>
+        </header>
 
         {workspaceError && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-sm flex items-start gap-3">
@@ -1510,9 +1483,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
         {/* Conversational "Ask Lyner to change this" drawer */}
         {showAskLynerDnaBar && (
-          <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 border-2 border-indigo-200/90 shadow-sm space-y-4">
+          <div className="lyner-document-sheet rounded-3xl p-6 sm:p-8 border-2 border-indigo-200/90 space-y-5">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3.5">
                 <Mascot
                   state={
                     isUpdatingDna
@@ -1521,11 +1494,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   }
                   size="sm"
                 />
-                <div>
-                  <div className="text-xs font-bold text-[#4F46E5]">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
                     Evolve Project DNA with Lyner
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs sm:text-sm text-slate-600">
                     Tell Lyner what the group decided, or test whether a new idea contradicts your verified research.
                   </p>
                 </div>
@@ -1539,7 +1512,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={dnaInstruction}
@@ -1550,7 +1523,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   }
                 }}
                 placeholder="e.g., We decided to place smaller bins near classrooms for paper and full 3-section stations in the cafeteria..."
-                className="flex-1 px-4 py-3 rounded-xl border-2 border-indigo-100 text-sm text-slate-900 focus:outline-none focus:border-[#4F46E5]"
+                className="flex-1 px-4 py-3 rounded-xl bg-slate-50/70 border-2 border-slate-200 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-[#4F46E5]"
               />
               <button
                 type="button"
@@ -1569,7 +1542,6 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               </button>
             </div>
 
-            {/* Quick prompts to test real Gemini DNA updating & contradiction detection */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="text-slate-400 font-semibold">Quick test:</span>
               {[
@@ -1580,14 +1552,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   key={sample}
                   type="button"
                   onClick={() => setDnaInstruction(sample)}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-50/70 hover:bg-indigo-100 text-[#4F46E5] font-semibold transition-colors cursor-pointer text-left truncate max-w-md"
+                  className="px-3 py-1.5 rounded-xl bg-indigo-50/80 hover:bg-indigo-100 text-[#4F46E5] font-semibold transition-colors cursor-pointer text-left truncate max-w-md"
                 >
                   “{sample}”
                 </button>
               ))}
             </div>
 
-            {/* Lyner Feedback or Contradiction Alert */}
             {dnaFeedback && (
               <div
                 className={`p-4 rounded-2xl border-2 text-sm space-y-2.5 ${
@@ -1641,29 +1612,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
         )}
 
-        {/* Two-Column Editorial DNA Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Main Readable Project DNA Document */}
-          <article className="lg:col-span-8 bg-white/95 backdrop-blur-md rounded-3xl border-2 border-indigo-100/90 shadow-xs p-8 sm:p-12 space-y-10">
-            <header className="space-y-3 pb-8 border-b border-slate-200/80">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-[#4F46E5]">
-                  Project Brief · {project.dna.length} Sections
-                </span>
-                <span className="text-xs text-slate-400 font-mono tabular-nums">
-                  Updated {project.createdAt}
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                {project.name}
-              </h1>
-              <p className="text-lg text-slate-600 leading-relaxed">
-                {project.summary}
-              </p>
-            </header>
-
+        {/* Two-Column Layout: MAIN DOCUMENT vs SECONDARY CONTEXT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          {/* MAIN DOCUMENT COLUMN: Each DNA section is a distinct, breathable editorial block */}
+          <div className="lg:col-span-8 space-y-7">
             {isEditingDnaManually ? (
-              <div className="space-y-8">
+              <div className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-8">
                 {manualDnaDraft.map((section, idx) => (
                   <div
                     key={section.id}
@@ -1710,145 +1664,174 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-slate-200/75 space-y-10">
-                {project.dna.map((section, index) => {
-                  const isOpenQuestions =
-                    section.heading.toUpperCase().includes('OPEN') ||
-                    section.heading.toUpperCase().includes('UNCERTAIN');
-                  const isHighlighted = highlightedDnaSectionId === section.id;
+              project.dna.map((section, index) => {
+                const isOpenQuestions =
+                  section.heading.toUpperCase().includes('OPEN') ||
+                  section.heading.toUpperCase().includes('UNCERTAIN');
+                const isHighlighted = highlightedDnaSectionId === section.id;
 
-                  return (
-                    <section
-                      key={section.id || index}
-                      id={`dna-sec-${section.id}`}
-                      className={`${index > 0 ? 'pt-10' : ''} space-y-3 transition-colors rounded-2xl ${
-                        isHighlighted
-                          ? 'bg-indigo-50/50 p-4 -mx-4 ring-2 ring-indigo-200'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xs font-mono font-bold text-slate-400">
-                            0{index + 1}.
-                          </span>
-                          <h2 className="text-sm font-extrabold tracking-wide text-[#4F46E5]">
-                            {section.heading}
-                          </h2>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          {(section.epistemicNote || isOpenQuestions) && (
-                            <span className="text-xs font-semibold text-[#7C3AED]">
-                              · {section.epistemicNote || 'Open / Being tested'}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAskLynerDnaBar(true);
-                              setDnaInstruction(
-                                `In ${section.heading}, let's update it so that `
-                              );
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="text-xs font-semibold text-slate-400 hover:text-[#4F46E5] transition-colors cursor-pointer"
-                          >
-                            Refine with Lyner →
-                          </button>
-                        </div>
-                      </div>
-
-                      {section.questionSubtitle && (
-                        <div className="text-xs sm:text-sm font-medium text-slate-400">
-                          {section.questionSubtitle}
-                        </div>
-                      )}
-
-                      <p className="text-base sm:text-[17px] text-slate-800 leading-relaxed whitespace-pre-line">
-                        {section.body}
-                      </p>
-
-                      {section.bullets && section.bullets.length > 0 && (
-                        <ul className="pt-1 space-y-2.5">
-                          {section.bullets.map((bullet, bIdx) => (
-                            <li
-                              key={bIdx}
-                              className="flex items-start gap-3 text-base text-slate-700 leading-relaxed"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#4F46E5] mt-2.5 shrink-0" />
-                              <span>{bullet}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
-            )}
-          </article>
-
-          {/* Right Sticky Companion Column: Section Outline + Connected Work */}
-          <aside className="lg:col-span-4 space-y-5 lg:sticky lg:top-8">
-            <div className="bg-white/95 rounded-3xl p-5 border border-indigo-100 shadow-xs space-y-3">
-              <div className="text-xs font-bold text-[#4F46E5]">
-                Brief Contents
-              </div>
-              <div className="space-y-1">
-                {project.dna.map((sec, idx) => (
-                  <button
-                    key={sec.id}
-                    type="button"
-                    onClick={() => {
-                      setHighlightedDnaSectionId(sec.id);
-                      const el = document.getElementById(`dna-sec-${sec.id}`);
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                      highlightedDnaSectionId === sec.id
-                        ? 'bg-indigo-50 text-[#4F46E5]'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                return (
+                  <section
+                    key={section.id || index}
+                    id={`dna-sec-${section.id}`}
+                    className={`rounded-3xl p-7 sm:p-9 transition-all space-y-5 ${
+                      isHighlighted
+                        ? 'lyner-card-selected'
+                        : isOpenQuestions
+                        ? 'bg-amber-50/70 border border-amber-200/90 shadow-xs'
+                        : 'lyner-document-sheet'
                     }`}
                   >
-                    <span className="truncate">
-                      0{idx + 1}. {sec.heading}
-                    </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                  </button>
-                ))}
+                    {/* Section Header Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-[#4F46E5] text-xs font-mono font-bold">
+                            0{index + 1}
+                          </span>
+                          <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">
+                            {section.heading}
+                          </h2>
+                          {(section.epistemicNote || isOpenQuestions) && (
+                            <span
+                              className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                                isOpenQuestions
+                                  ? 'bg-amber-100 text-amber-900'
+                                  : 'bg-emerald-50 text-emerald-700'
+                              }`}
+                            >
+                              {section.epistemicNote || 'Open / Being tested'}
+                            </span>
+                          )}
+                        </div>
+
+                        {section.questionSubtitle && (
+                          <div className="text-xs sm:text-sm font-medium text-slate-500">
+                            {section.questionSubtitle}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAskLynerDnaBar(true);
+                          setDnaInstruction(
+                            `In ${section.heading}, let's update it so that `
+                          );
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer shrink-0"
+                      >
+                        Refine with Lyner →
+                      </button>
+                    </div>
+
+                    {/* Section Prose Body (Comfortable width & line-height) */}
+                    <div className="lyner-prose text-[16px] sm:text-[17px] text-slate-800 whitespace-pre-line">
+                      {section.body}
+                    </div>
+
+                    {/* Section Structured Bullets */}
+                    {section.bullets && section.bullets.length > 0 && (
+                      <ul className="pt-2 space-y-3">
+                        {section.bullets.map((bullet, bIdx) => (
+                          <li
+                            key={bIdx}
+                            className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/60 text-sm sm:text-[15px] text-slate-800 leading-relaxed max-w-[66ch]"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-[#4F46E5] mt-2 shrink-0" />
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })
+            )}
+          </div>
+
+          {/* SECONDARY CONTEXT SIDEBAR (Distinct recessed well so it never bleeds into the document) */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-8 lyner-secondary-panel rounded-3xl p-5 sm:p-6 space-y-6">
+            <div className="px-1">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                Secondary Context & Outline
               </div>
             </div>
 
-            {/* Connected Verification Card */}
-            <div className="bg-white/95 rounded-3xl p-5 border border-indigo-100 shadow-xs space-y-3">
-              <div className="flex items-center gap-2.5">
+            {/* Outline Card inside Secondary Well */}
+            <div className="lyner-card rounded-2xl p-5 space-y-3.5">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                Brief Sections
+              </div>
+              <div className="space-y-1.5">
+                {project.dna.map((sec, idx) => {
+                  const isActive = highlightedDnaSectionId === sec.id;
+                  return (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => {
+                        setHighlightedDnaSectionId(sec.id);
+                        const el = document.getElementById(`dna-sec-${sec.id}`);
+                        el?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'center',
+                        });
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                        isActive
+                          ? 'bg-[#4F46E5] text-white shadow-2xs'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      <span className="truncate">
+                        0{idx + 1}. {sec.heading}
+                      </span>
+                      <ChevronRight
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          isActive ? 'text-white' : 'text-slate-400'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Living DNA Connection Card */}
+            <div className="lyner-card rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-3">
                 <Mascot state="EXPLAINING" size="sm" />
                 <div>
-                  <div className="text-xs font-bold text-slate-900">
+                  <div className="text-xs font-extrabold text-slate-900">
                     Living DNA Connection
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    {verifiedTasksCount} verified tasks have updated this brief
+                  <div className="text-[11px] font-semibold text-emerald-700">
+                    {verifiedTasksCount} verified tasks linked
                   </div>
                 </div>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                When teammates verify survey findings or prototype tests in <strong>Tasks</strong>, Lyner automatically records those discoveries in your Project DNA.
+                When teammates verify survey findings or prototype tests in{' '}
+                <strong>Tasks</strong>, Lyner automatically records those discoveries in your Project DNA.
               </p>
-              <div className="pt-1 flex flex-col gap-2">
+              <div className="pt-1 flex flex-col gap-2.5">
                 <button
                   type="button"
                   onClick={() => onSelectTab('tasks')}
-                  className="lyner-btn-secondary w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer"
+                  className="lyner-btn-secondary w-full py-2.5 px-3.5 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer"
                 >
-                  <span>Go to Team Tasks ({verifiedTasksCount}/{project.tasks.length})</span>
+                  <span>
+                    Go to Team Tasks ({verifiedTasksCount}/{project.tasks.length})
+                  </span>
                   <ArrowRight className="w-3.5 h-3.5 text-[#4F46E5]" />
                 </button>
                 <button
                   type="button"
                   onClick={() => onSelectTab('pulse')}
-                  className="w-full py-2 px-3 rounded-xl text-xs font-bold text-[#4F46E5] hover:bg-indigo-50 flex items-center justify-between cursor-pointer"
+                  className="w-full py-2 px-3.5 rounded-xl text-xs font-bold text-[#4F46E5] bg-indigo-50/70 hover:bg-indigo-100/80 flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <span>View DNA Evolution in Pulse</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -1863,7 +1846,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   /* ==================================================================
      3. TASKS & WORK ("What needs to happen?")
-        - Interactive Execution & Verification Studio
+        - Clear task groups, card separation, status hierarchy, and interactive studio
      ================================================================== */
   if (activeTab === 'tasks') {
     const filteredTasks = project.tasks.filter((t) => {
@@ -1882,18 +1865,29 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       (t) => t.status === 'VERIFIED'
     ).length;
 
+    const openFilteredTasks = filteredTasks.filter(
+      (t) => t.status !== 'VERIFIED'
+    );
+    const verifiedFilteredTasks = filteredTasks.filter(
+      (t) => t.status === 'VERIFIED'
+    );
+
     // Focused Task Execution & Verification Studio View
     if (activeTask) {
       return (
-        <div className="p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-4xl mx-auto space-y-10">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-200/90">
             <BackButton
               label="Back to All Tasks"
               onClick={() => setSelectedTaskId(null)}
             />
-            <div className="text-xs font-semibold text-slate-500">
-              <span>{activeTask.discipline}</span>
-              <span aria-hidden="true"> · </span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-600">
+              <span className="font-extrabold text-[#4F46E5]">
+                {activeTask.discipline}
+              </span>
+              <span aria-hidden="true" className="text-slate-300">
+                ·
+              </span>
               <span>
                 Assigned to{' '}
                 <strong className="text-slate-900">
@@ -1904,71 +1898,77 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             </div>
           </div>
 
-          {/* Task Header Card */}
-          <div className="bg-white/95 rounded-3xl p-6 sm:p-8 space-y-5 border-2 border-indigo-100 shadow-xs">
-            <div className="space-y-2">
-              <div className="text-xs font-bold text-[#4F46E5]">
-                Task Workspace & Verification
+          {/* Section 1: Task Brief Sheet */}
+          <section className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-6">
+            <div className="space-y-2.5">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                01 · Task Brief & Verification State
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {activeTask.title}
               </h1>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                <strong>Goal:</strong> {activeTask.goal}
+              <p className="text-base text-slate-700 leading-relaxed max-w-[65ch]">
+                <strong className="text-slate-900">Goal:</strong>{' '}
+                {activeTask.goal}
               </p>
             </div>
 
-            <VerificationState
-              status={activeTask.status}
-              feedback={activeTask.verificationEvaluation}
-            />
+            <div className="pt-2">
+              <VerificationState
+                status={activeTask.status}
+                feedback={activeTask.verificationEvaluation}
+              />
+            </div>
 
             {activeTask.dnaOutcomeSummary && (
-              <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
                 <span className="font-bold text-emerald-950">
                   ✓ Recorded in Project DNA: {activeTask.dnaOutcomeSummary}
                 </span>
                 <button
                   type="button"
                   onClick={() => onSelectTab('dna')}
-                  className="font-bold text-emerald-800 underline cursor-pointer shrink-0"
+                  className="lyner-btn-secondary px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-800 shrink-0 cursor-pointer"
                 >
                   View in Project DNA →
                 </button>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Interactive Guided Submission Form */}
-          <div className="bg-white/95 rounded-3xl p-6 sm:p-8 space-y-6 border-2 border-indigo-100 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
+          {/* Section 2: Interactive Guided Submission Studio */}
+          <section className="lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-7">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
+              <div className="flex items-center gap-3.5">
                 <Mascot
                   state={isVerifyingSubmission ? 'THINKING' : 'HELPING'}
                   size="sm"
                 />
-                <div>
-                  <h2 className="text-base font-extrabold text-slate-900">
+                <div className="space-y-0.5">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                    02 · Evidence & Work Submission
+                  </div>
+                  <h2 className="text-lg font-extrabold text-slate-900">
                     Submit Work for Lyner Verification
                   </h2>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs sm:text-sm text-slate-500">
                     Lyner checks your explanation and evidence before updating the team’s Project DNA.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handlePrefillVerifiedSubmissionExample}
-                  className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer"
+                  className="lyner-btn-secondary px-3.5 py-2 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer"
                 >
                   Fill Detailed Student Example
                 </button>
                 <button
                   type="button"
                   onClick={handlePrefillShallowExample}
-                  className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-xs font-bold text-amber-900 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-xs font-bold text-amber-900 transition-colors cursor-pointer"
                 >
                   Test Shallow Claim
                 </button>
@@ -1976,14 +1976,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             </div>
 
             {workspaceError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900">
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-900">
                 {workspaceError}
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
                   01. What did you do?
                 </label>
                 <textarea
@@ -1991,12 +1991,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   onChange={(e) => setSubWhatDidYouDo(e.target.value)}
                   rows={2}
                   placeholder="Describe what you built, researched, or tested for GreenCycle..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm focus:outline-none focus:border-[#4F46E5]"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50/70 border-2 border-slate-200/90 text-sm text-slate-900 leading-relaxed focus:bg-white focus:outline-none focus:border-[#4F46E5]"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <div className="space-y-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
                   02. How did you do it?
                 </label>
                 <textarea
@@ -2004,12 +2004,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   onChange={(e) => setSubHowImplemented(e.target.value)}
                   rows={2}
                   placeholder="Explain the materials, survey questions, design choices, or testing setup..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm focus:outline-none focus:border-[#4F46E5]"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50/70 border-2 border-slate-200/90 text-sm text-slate-900 leading-relaxed focus:bg-white focus:outline-none focus:border-[#4F46E5]"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <div className="space-y-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
                   03. What did you learn or find?
                 </label>
                 <textarea
@@ -2017,13 +2017,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   onChange={(e) => setSubWhatResult(e.target.value)}
                   rows={2}
                   placeholder="Share the outcome or student feedback so Lyner can update Project DNA..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-sm focus:outline-none focus:border-[#4F46E5]"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50/70 border-2 border-slate-200/90 text-sm text-slate-900 leading-relaxed focus:bg-white focus:outline-none focus:border-[#4F46E5]"
                 />
               </div>
 
-              {/* Evidence Attachments */}
-              <div className="space-y-3 pt-1">
-                <label className="block text-xs font-bold text-slate-700">
+              {/* Evidence Attachments Well */}
+              <div className="lyner-section-surface rounded-2xl p-5 space-y-3.5">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
                   04. Attach Evidence (Photos, Survey Data, Label Designs, Notes)
                 </label>
 
@@ -2056,10 +2056,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                       key={btn.type}
                       type="button"
                       onClick={() => setEvidenceDraftType(btn.type)}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                         evidenceDraftType === btn.type
-                          ? 'bg-indigo-50 border-[#4F46E5] text-[#4F46E5]'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                          ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-[#4F46E5]'
                       }`}
                     >
                       {btn.icon}
@@ -2069,20 +2069,20 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 </div>
 
                 {evidenceDraftType && (
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2.5">
                     <input
                       type="text"
                       value={evidenceDraftLabel}
                       onChange={(e) => setEvidenceDraftLabel(e.target.value)}
                       placeholder="Filename or title (e.g. recycling_labels_vA_vs_vB.png)"
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs"
                     />
                     <input
                       type="text"
                       value={evidenceDraftDetail}
                       onChange={(e) => setEvidenceDraftDetail(e.target.value)}
                       placeholder="Short description of what this evidence proves..."
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs"
                     />
                     <div className="flex justify-end gap-2">
                       <button
@@ -2108,7 +2108,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     {subEvidence.map((ev) => (
                       <div
                         key={ev.id}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-50/90 border border-indigo-200 text-xs text-slate-800"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-indigo-200 shadow-2xs text-xs text-slate-800"
                       >
                         <span className="font-bold text-[#4F46E5]">
                           {ev.type.toUpperCase()}:
@@ -2131,12 +2131,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 )}
               </div>
 
-              <div className="pt-3 flex justify-end">
+              <div className="pt-2 flex justify-end">
                 <button
                   type="button"
                   disabled={!subWhatDidYouDo.trim() || isVerifyingSubmission}
                   onClick={handleSubmitTaskWork}
-                  className="lyner-btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold disabled:opacity-50 cursor-pointer"
+                  className="lyner-btn-primary inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-bold disabled:opacity-50 cursor-pointer"
                 >
                   {isVerifyingSubmission ? (
                     <>
@@ -2152,49 +2152,61 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 </button>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Past Submissions History */}
+          {/* Section 3: Past Submissions History */}
           {activeTask.submissions.length > 0 && (
-            <div className="bg-white/95 rounded-3xl p-6 sm:p-8 border border-indigo-100 space-y-4">
-              <h3 className="text-xs font-bold text-slate-500">
-                Verified & Past Submissions ({activeTask.submissions.length})
-              </h3>
+            <section className="lyner-section-surface rounded-3xl p-6 sm:p-8 space-y-5">
+              <div className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                03 · Verified & Past Submissions ({activeTask.submissions.length})
+              </div>
               <div className="space-y-4">
                 {activeTask.submissions.map((sub) => (
                   <div
                     key={sub.id}
-                    className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 text-xs sm:text-sm"
+                    className="lyner-card p-6 rounded-2xl space-y-3.5 text-xs sm:text-sm"
                   >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900">
+                    <div className="flex items-center justify-between text-xs pb-2.5 border-b border-slate-100">
+                      <span className="font-extrabold text-slate-900">
                         {sub.submittedBy} · {sub.role}
                       </span>
-                      <span className="text-slate-400">{sub.submittedAt}</span>
+                      <span className="text-slate-400 font-medium">
+                        {sub.submittedAt}
+                      </span>
                     </div>
-                    <p className="text-slate-800">
-                      <strong>What was done:</strong> {sub.whatDidYouDo}
-                    </p>
-                    <p className="text-slate-700">
-                      <strong>How it was implemented:</strong>{' '}
-                      {sub.howDidYouImplement}
-                    </p>
-                    <p className="text-slate-700">
-                      <strong>Result & findings:</strong> {sub.whatWasResult}
-                    </p>
+                    <div className="space-y-2 leading-relaxed">
+                      <p className="text-slate-800">
+                        <strong className="text-slate-900">
+                          What was done:
+                        </strong>{' '}
+                        {sub.whatDidYouDo}
+                      </p>
+                      <p className="text-slate-700">
+                        <strong className="text-slate-900">
+                          How it was implemented:
+                        </strong>{' '}
+                        {sub.howDidYouImplement}
+                      </p>
+                      <p className="text-slate-700">
+                        <strong className="text-slate-900">
+                          Result & findings:
+                        </strong>{' '}
+                        {sub.whatWasResult}
+                      </p>
+                    </div>
                     {sub.evidence && sub.evidence.length > 0 && (
                       <div className="flex flex-wrap gap-2 pt-1">
                         {sub.evidence.map((ev) => (
                           <span
                             key={ev.id}
-                            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700"
+                            className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs font-semibold text-slate-700"
                           >
                             {ev.label} — {ev.detail}
                           </span>
                         ))}
                       </div>
                     )}
-                    <div className="pt-1">
+                    <div className="pt-2">
                       <VerificationState
                         status={sub.evaluationStatus}
                         feedback={sub.lynerFeedback}
@@ -2203,24 +2215,105 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
       );
     }
 
+    const renderTaskCard = (task: ProjectTask, idx: number) => {
+      const isVerified = task.status === 'VERIFIED';
+      const needsEvidence = task.status === 'NEEDS_MORE_EVIDENCE';
+
+      return (
+        <div
+          key={task.id}
+          onClick={() => setSelectedTaskId(task.id)}
+          className="lyner-card-interactive rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 cursor-pointer group"
+        >
+          <div className="flex items-start gap-4 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 ${
+                isVerified
+                  ? 'bg-[#22C55E] text-white'
+                  : needsEvidence
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-indigo-50 text-[#4F46E5] border border-indigo-200/80'
+              }`}
+            >
+              {isVerified ? (
+                <Check className="w-4 h-4 stroke-[3]" />
+              ) : (
+                String(idx + 1).padStart(2, '0')
+              )}
+            </div>
+
+            <div className="space-y-2 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 font-bold text-[#4F46E5]">
+                  {task.discipline}
+                </span>
+                <span className="font-semibold text-slate-700">
+                  {task.assigneeName} ({task.assigneeRole})
+                </span>
+                <span aria-hidden="true" className="text-slate-300">
+                  ·
+                </span>
+                <span
+                  className={`font-bold ${
+                    isVerified
+                      ? 'text-emerald-700'
+                      : needsEvidence
+                      ? 'text-amber-700'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  {isVerified
+                    ? '✓ Verified by Lyner'
+                    : needsEvidence
+                    ? '⚠ Needs Evidence'
+                    : 'Ready to Submit'}
+                </span>
+              </div>
+
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900 group-hover:text-[#4F46E5] transition-colors">
+                {task.title}
+              </h3>
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+                {task.goal}
+              </p>
+
+              {task.dnaOutcomeSummary && (
+                <div className="pt-1 text-xs font-bold text-emerald-700">
+                  ✓ DNA Impact: {task.dnaOutcomeSummary}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="shrink-0 self-end sm:self-center">
+            <span className="lyner-btn-secondary inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-[#4F46E5] group-hover:border-[#4F46E5]">
+              <span>{isVerified ? 'Inspect Evidence' : 'Open Workspace'}</span>
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </div>
+        </div>
+      );
+    };
+
     // All Tasks List View
     return (
-      <div className="p-6 sm:p-10 max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-[#4F46E5]">
+      <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-5xl mx-auto space-y-9">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-slate-200/90">
+          <div className="space-y-2 max-w-2xl">
+            <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
               Tasks & Work · What needs to happen?
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Team Execution & Verification
             </h1>
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600 leading-relaxed">
               Click any task to open its workspace, attach evidence, and let Lyner verify outcomes into your Project DNA.
             </p>
           </div>
@@ -2229,7 +2322,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             type="button"
             disabled={isGeneratingTasks}
             onClick={handleGenerateMoreTasksFromDNA}
-            className="lyner-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold cursor-pointer disabled:opacity-60 shrink-0"
+            className="lyner-btn-primary inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold cursor-pointer disabled:opacity-60 shrink-0"
           >
             {isGeneratingTasks ? (
               <>
@@ -2243,19 +2336,19 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               </>
             )}
           </button>
-        </div>
+        </header>
 
-        {/* Interactive Filter Controls Bar */}
-        <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Interactive Filter Controls Well */}
+        <div className="lyner-section-surface p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Member Filter */}
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={() => setMemberFilter('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 memberFilter === 'ALL'
-                  ? 'bg-[#4F46E5] text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  ? 'bg-[#4F46E5] text-white shadow-2xs'
+                  : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
               }`}
             >
               All Team ({project.tasks.length})
@@ -2266,10 +2359,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 key={member.id}
                 type="button"
                 onClick={() => setMemberFilter(member.name)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   memberFilter === member.name
-                    ? 'bg-[#4F46E5] text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-[#4F46E5] text-white shadow-2xs'
+                    : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/70'
                 }`}
               >
                 {member.name}
@@ -2278,7 +2371,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
 
           {/* Status Segmented Filter */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl self-start sm:self-auto">
+          <div className="flex items-center gap-1 p-1 bg-white rounded-xl border border-slate-200/80 self-start sm:self-auto">
             {(
               [
                 { id: 'ALL', label: `All (${project.tasks.length})` },
@@ -2293,9 +2386,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 key={st.id}
                 type="button"
                 onClick={() => setStatusFilter(st.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                   statusFilter === st.id
-                    ? 'bg-white text-slate-900 shadow-2xs'
+                    ? 'bg-[#EEF2FF] text-[#4F46E5]'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -2305,103 +2398,66 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* Interactive Task Cards */}
-        <div className="space-y-3.5">
-          {filteredTasks.map((task, idx) => {
-            const isVerified = task.status === 'VERIFIED';
-            const needsEvidence = task.status === 'NEEDS_MORE_EVIDENCE';
-
-            return (
-              <div
-                key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                className="lyner-card-interactive rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer group"
-              >
-                <div className="flex items-start gap-4 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 ${
-                      isVerified
-                        ? 'bg-[#22C55E] text-white'
-                        : needsEvidence
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-indigo-50 text-[#4F46E5] border border-indigo-200'
-                    }`}
-                  >
-                    {isVerified ? (
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    ) : (
-                      String(idx + 1).padStart(2, '0')
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <span className="font-bold text-[#4F46E5]">
-                        {task.discipline}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-semibold text-slate-700">
-                        {task.assigneeName} ({task.assigneeRole})
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span
-                        className={`font-bold ${
-                          isVerified
-                            ? 'text-emerald-700'
-                            : needsEvidence
-                            ? 'text-amber-700'
-                            : 'text-slate-500'
-                        }`}
-                      >
-                        {isVerified
-                          ? '✓ Verified by Lyner'
-                          : needsEvidence
-                          ? '⚠ Needs Evidence'
-                          : 'Ready to Submit'}
-                      </span>
-                    </div>
-
-                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900 group-hover:text-[#4F46E5] transition-colors">
-                      {task.title}
-                    </h2>
-
-                    <p className="text-xs sm:text-sm text-slate-600 line-clamp-2">
-                      {task.goal}
-                    </p>
-
-                    {task.dnaOutcomeSummary && (
-                      <div className="pt-1 text-xs font-semibold text-emerald-700">
-                        DNA Impact: {task.dnaOutcomeSummary}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <span className="text-xs font-bold text-[#4F46E5] group-hover:underline">
-                    {isVerified ? 'Inspect Evidence' : 'Open Workspace'}
+        {/* Distinct Task Groups: Active / Open vs Verified */}
+        {statusFilter === 'ALL' ? (
+          <div className="space-y-10">
+            {openFilteredTasks.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
+                    Active & Ready for Evidence ({openFilteredTasks.length})
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    Submit student evidence to verify
                   </span>
-                  <ChevronRight className="w-4 h-4 text-[#4F46E5] transition-transform group-hover:translate-x-0.5" />
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                <div className="space-y-4">
+                  {openFilteredTasks.map((task, idx) =>
+                    renderTaskCard(task, idx)
+                  )}
+                </div>
+              </section>
+            )}
+
+            {verifiedFilteredTasks.length > 0 && (
+              <section className="space-y-4 pt-2 border-t border-slate-200/70">
+                <div className="flex items-center justify-between px-1 pt-2">
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+                    Verified & Recorded in Project DNA (
+                    {verifiedFilteredTasks.length})
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    Linked to DNA & Pulse
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {verifiedFilteredTasks.map((task, idx) =>
+                    renderTaskCard(task, idx)
+                  )}
+                </div>
+              </section>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTasks.map((task, idx) => renderTaskCard(task, idx))}
+          </div>
+        )}
       </div>
     );
   }
 
   /* ==================================================================
      4. TEAM CHAT ("What are we talking about?")
-        - Collaborative Student Team Discussion + Selective AI Facilitation
+        - Clear speaker separation, Lyner facilitator callouts, and elevated composer dock
      ================================================================== */
   if (activeTab === 'chat') {
     return (
-      <div className="h-screen flex flex-col max-w-5xl mx-auto px-4 sm:px-8 py-5">
+      <div className="h-screen flex flex-col max-w-5xl mx-auto px-4 sm:px-8 py-6">
         {/* Rich Collaborative Header */}
-        <header className="bg-white/92 backdrop-blur-md p-4 rounded-2xl border border-indigo-100 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <header className="lyner-document-sheet px-5 py-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
           <div className="space-y-0.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#4F46E5]">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Team Chat · Collaborative Workspace</span>
             </div>
@@ -2411,7 +2467,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </div>
 
           {/* Dynamic Speaker Switcher across student team members */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 lyner-section-surface p-1.5 rounded-xl text-xs">
             <span className="px-2 text-slate-500 font-bold">
               Speaking as:
             </span>
@@ -2420,10 +2476,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 key={member.id}
                 type="button"
                 onClick={() => setActiveChatSender(member.name)}
-                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeChatSender === member.name
                     ? 'bg-[#4F46E5] text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white'
                 }`}
               >
                 {member.name}
@@ -2433,7 +2489,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </header>
 
         {/* Active Open Question Context Strip */}
-        <div className="mt-3 px-4 py-2.5 rounded-xl bg-indigo-50/80 border border-indigo-100 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+        <div className="mt-3 px-4 py-2.5 rounded-xl bg-[#EEF2FF] border border-indigo-200/80 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
           <span className="text-slate-700">
             <strong className="text-[#4F46E5]">Active Focus:</strong>{' '}
             {project.openQuestionHighlight ||
@@ -2448,30 +2504,40 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           </button>
         </div>
 
-        {/* Messages Scroll Area */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
-          {project.chat.map((msg) => (
-            <ChatMessage
-              key={msg.id}
-              message={msg}
-              onReplyClick={(m) => setReplyingToMessage(m)}
-              onToggleReaction={handleToggleReaction}
-              onSelectTradeoffOption={handleSelectTradeoffOption}
-              onResolveContradiction={handleResolveChatContradiction}
-              onAcceptDnaProposal={handleAcceptChatDnaProposal}
-              onRejectDnaProposal={handleRejectChatDnaProposal}
-              onNavigateTab={navigateToSurface}
-            />
-          ))}
+        {/* Messages Scroll Area with Speaker Grouping Rhythm */}
+        <div className="flex-1 overflow-y-auto py-6 pr-1">
+          {project.chat.map((msg, idx) => {
+            const prevMsg = idx > 0 ? project.chat[idx - 1] : null;
+            const isSameSenderAsPrevious = Boolean(
+              prevMsg &&
+                prevMsg.senderName === msg.senderName &&
+                prevMsg.senderType === msg.senderType
+            );
+
+            return (
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                isSameSenderAsPrevious={isSameSenderAsPrevious}
+                onReplyClick={(m) => setReplyingToMessage(m)}
+                onToggleReaction={handleToggleReaction}
+                onSelectTradeoffOption={handleSelectTradeoffOption}
+                onResolveContradiction={handleResolveChatContradiction}
+                onAcceptDnaProposal={handleAcceptChatDnaProposal}
+                onRejectDnaProposal={handleRejectChatDnaProposal}
+                onNavigateTab={navigateToSurface}
+              />
+            );
+          })}
 
           {isChatLoading && (
-            <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-white/95 border-2 border-indigo-100 w-fit shadow-xs">
+            <div className="mt-6 flex items-center gap-3.5 px-5 py-4 rounded-2xl lyner-document-sheet w-fit">
               <Mascot state="THINKING" size="sm" />
               <div className="space-y-0.5">
                 <div className="text-xs font-extrabold text-[#4F46E5]">
                   Thinking...
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-xs text-slate-500">
                   Lyner is evaluating your message against Project DNA, Tasks, and Pulse
                 </div>
               </div>
@@ -2479,7 +2545,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           )}
 
           {workspaceError && (
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-900 flex items-center justify-between gap-3">
+            <div className="mt-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-900 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <Mascot state="CONCERNED" size="sm" />
                 <div>
@@ -2505,8 +2571,8 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           )}
         </div>
 
-        {/* Interactive Composer */}
-        <div className="pt-3 border-t border-slate-200/80 space-y-2.5 shrink-0">
+        {/* Elevated Interactive Composer Dock */}
+        <div className="lyner-document-sheet rounded-2xl p-4 space-y-3 shrink-0">
           {replyingToMessage && (
             <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-indigo-50 text-xs text-slate-700">
               <span>
@@ -2525,7 +2591,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
           {/* Quick prompts to test student team chat, DNA update proposals & next-step reasoning */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-400 font-semibold">Try asking:</span>
+            <span className="text-slate-400 font-bold">Try asking:</span>
             <button
               type="button"
               onClick={() =>
@@ -2534,7 +2600,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   true
                 )
               }
-              className="px-3 py-1.5 rounded-xl bg-white border border-indigo-100 hover:border-[#4F46E5] text-slate-700 font-semibold cursor-pointer shadow-2xs"
+              className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
             >
               “We realized students don’t really know what belongs in each bin”
             </button>
@@ -2543,7 +2609,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               onClick={() =>
                 handleSendChat('What should we work on next?', true)
               }
-              className="px-3 py-1.5 rounded-xl bg-white border border-indigo-100 hover:border-[#4F46E5] text-slate-700 font-semibold cursor-pointer shadow-2xs"
+              className="lyner-btn-secondary px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
             >
               “What should we work on next?”
             </button>
@@ -2555,13 +2621,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   true
                 )
               }
-              className="px-3 py-1.5 rounded-xl bg-amber-50/90 border border-amber-200 hover:border-amber-400 text-amber-900 font-semibold cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-semibold cursor-pointer transition-colors"
             >
               “We should probably put the recycling bins near the cafeteria”
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={() =>
@@ -2586,7 +2652,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 }
               }}
               placeholder={`Message team as ${activeChatSender} (or tag @Lyner)...`}
-              className="flex-1 px-4 py-3 rounded-xl bg-white border-2 border-indigo-100 text-sm text-slate-900 focus:outline-none focus:border-[#4F46E5]"
+              className="flex-1 px-4 py-3 rounded-xl bg-slate-50/80 border-2 border-slate-200/90 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#4F46E5]"
             />
 
             <button
@@ -2606,7 +2672,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   /* ==================================================================
      5. PULSE ("What meaningfully changed?")
-        - Interactive Evolution Timeline with Filter Tabs
+        - Clear Timeline Event Separation, Category Badges, and Recessed Metadata
      ================================================================== */
   if (activeTab === 'pulse') {
     const filteredPulse = project.pulse.filter((item) => {
@@ -2625,25 +2691,25 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     });
 
     return (
-      <div className="p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-[#4F46E5]">
+      <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-4xl mx-auto space-y-10">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-slate-200/90">
+          <div className="space-y-2 max-w-xl">
+            <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
               Pulse · What meaningfully changed?
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Project Evolution Timeline
             </h1>
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600 leading-relaxed">
               How {project.name} evolved from an initial classroom observation into a tested recycling station prototype.
             </p>
           </div>
 
           {/* Interactive Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1 p-1 bg-white/90 border border-indigo-100 rounded-xl self-start">
+          <div className="flex flex-wrap items-center gap-1 p-1.5 lyner-section-surface rounded-2xl self-start shrink-0">
             {(
               [
-                { id: 'ALL', label: 'All' },
+                { id: 'ALL', label: 'All Events' },
                 { id: 'VERIFIED', label: 'Verified Work' },
                 { id: 'DECISIONS', label: 'Decisions' },
                 { id: 'OPEN', label: 'Open Questions' },
@@ -2653,32 +2719,40 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setPulseFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   pulseFilter === tab.id
-                    ? 'bg-[#4F46E5] text-white'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#4F46E5] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
-        </div>
+        </header>
 
-        {/* Connected Timeline Rail */}
-        <div className="relative pl-6 sm:pl-8 border-l-2 border-indigo-200 space-y-5">
+        {/* Connected Timeline Rail with Distinct Event Separation */}
+        <div className="relative pl-7 sm:pl-10 border-l-2 border-indigo-200/90 space-y-7">
           {filteredPulse.map((item) => {
-            const isVerified = item.type === 'verified_outcome';
+            const isVerified =
+              item.type === 'verified_outcome' ||
+              item.type === 'task_milestone';
             const isQuestion = item.type === 'open_question';
 
+            const badgeLabel = isVerified
+              ? 'Verified Outcome'
+              : isQuestion
+              ? 'Open Question'
+              : 'Decision / Direction';
+
             return (
-              <div
+              <article
                 key={item.id}
-                className="relative bg-white/95 rounded-2xl p-6 border-2 border-indigo-100/90 shadow-xs space-y-3"
+                className="relative lyner-document-sheet rounded-3xl p-6 sm:p-8 space-y-4"
               >
-                {/* Timeline Dot */}
+                {/* Timeline Node Marker */}
                 <div
-                  className={`absolute -left-[33px] sm:-left-[41px] top-6 w-4 h-4 rounded-full ring-4 ring-[#EEF2FF] ${
+                  className={`absolute -left-[37px] sm:-left-[49px] top-8 w-4 h-4 rounded-full ring-4 ring-[#EEF2FF] ${
                     isVerified
                       ? 'bg-[#22C55E]'
                       : isQuestion
@@ -2687,34 +2761,55 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   }`}
                 />
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-base font-extrabold text-slate-900">
-                    {item.headline}
-                  </span>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span>{item.actor}</span>
+                {/* Event Header & Category */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-md text-[11px] font-extrabold uppercase tracking-wider ${
+                        isVerified
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : isQuestion
+                          ? 'bg-amber-100 text-amber-900'
+                          : 'bg-indigo-50 text-[#4F46E5]'
+                      }`}
+                    >
+                      {badgeLabel}
+                    </span>
+                    <h2 className="text-lg font-extrabold text-slate-900">
+                      {item.headline}
+                    </h2>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                    <span className="font-bold text-slate-600">
+                      {item.actor}
+                    </span>
                     <span aria-hidden="true">·</span>
                     <span className="tabular-nums">{item.whenItHappened}</span>
                   </div>
                 </div>
 
-                <p className="text-sm sm:text-base text-slate-800 leading-relaxed">
+                {/* What Changed Prose */}
+                <p className="text-[15px] sm:text-base text-slate-800 leading-relaxed max-w-[65ch]">
                   {item.whatChanged}
                 </p>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs text-slate-600 space-y-1">
-                  <div>
-                    <strong className="text-slate-800">Why it matters: </strong>
-                    {item.whyItMatters}
+                {/* Recessed Why It Matters & Source Footer */}
+                <div className="p-4 rounded-2xl lyner-section-surface flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-slate-600">
+                  <div className="space-y-1 max-w-xl">
+                    <div>
+                      <strong className="text-slate-900">
+                        Why it matters:{' '}
+                      </strong>
+                      {item.whyItMatters}
+                    </div>
+                    <div>
+                      <strong className="text-slate-900">Source: </strong>
+                      {item.whereItCameFrom}
+                    </div>
                   </div>
-                  <div>
-                    <strong className="text-slate-800">Source: </strong>
-                    {item.whereItCameFrom}
-                  </div>
-                </div>
 
-                {item.linkedSource && (
-                  <div className="pt-1">
+                  {item.linkedSource && (
                     <button
                       type="button"
                       onClick={() =>
@@ -2723,14 +2818,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                           item.linkedSource!.targetId
                         )
                       }
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4F46E5] hover:underline cursor-pointer"
+                      className="lyner-btn-secondary px-3.5 py-2 rounded-xl text-xs font-bold text-[#4F46E5] inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
                     >
                       <span>{item.linkedSource.label}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </article>
             );
           })}
         </div>
@@ -2739,28 +2834,32 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   }
 
   /* ==================================================================
-     6. FILES & EVIDENCE (With Interactive Artifact Inspector)
+     6. FILES & EVIDENCE (Secondary List Well + Primary Artifact Sheet)
      ================================================================== */
   if (activeTab === 'files') {
     const selectedFile =
       project.files.find((f) => f.id === selectedFileId) || project.files[0];
 
     return (
-      <div className="p-6 sm:p-10 max-w-5xl mx-auto space-y-6">
-        <div className="space-y-1">
-          <div className="text-xs font-bold text-[#4F46E5]">
+      <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-5xl mx-auto space-y-9">
+        <header className="space-y-2 pb-8 border-b border-slate-200/90">
+          <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
             Files & Evidence · Student Project Artifacts
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Shared Files & Verification Evidence
           </h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-base text-slate-600 max-w-2xl leading-relaxed">
             Select any file to preview how student research, prototypes, and signage connect directly to the Project DNA.
           </p>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-5 space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Secondary Well for Artifact List */}
+          <div className="lg:col-span-5 lyner-secondary-panel p-4 sm:p-5 rounded-3xl space-y-3">
+            <div className="px-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              Project Artifacts ({project.files.length})
+            </div>
             {project.files.map((f) => {
               const isSelected = selectedFile?.id === f.id;
               return (
@@ -2768,14 +2867,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   key={f.id}
                   type="button"
                   onClick={() => setSelectedFileId(f.id)}
-                  className={`w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
+                  className={`w-full text-left p-4 rounded-2xl transition-all cursor-pointer space-y-1.5 ${
                     isSelected
-                      ? 'bg-indigo-50/90 border-[#4F46E5] shadow-[0_3px_0_0_#4F46E5]'
-                      : 'bg-white border-indigo-100 hover:border-[#4F46E5]/50'
+                      ? 'lyner-card-selected'
+                      : 'lyner-card-interactive'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[#4F46E5]">
+                    <span className="text-xs font-extrabold text-[#4F46E5]">
                       {f.type}
                     </span>
                     <span className="text-[11px] text-slate-400">
@@ -2793,32 +2892,32 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             })}
           </div>
 
-          {/* Interactive File Inspector */}
+          {/* Primary Document Sheet for Artifact Inspector */}
           {selectedFile && (
-            <div className="lg:col-span-7 bg-white/95 rounded-3xl p-6 sm:p-8 border-2 border-indigo-100 shadow-xs space-y-5">
-              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <div className="text-xs font-bold text-[#4F46E5]">
+            <div className="lg:col-span-7 lyner-document-sheet rounded-3xl p-7 sm:p-9 space-y-6">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-5">
+                <div className="space-y-1">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
                     Artifact Preview · {selectedFile.type}
                   </div>
-                  <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
                     {selectedFile.name}
                   </h2>
                 </div>
                 <Eye className="w-5 h-5 text-[#4F46E5] shrink-0" />
               </div>
 
-              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
+              <p className="text-[15px] sm:text-base text-slate-700 leading-relaxed">
                 {selectedFile.summary}
               </p>
 
               {/* Contextual Visual Preview of the Student Artifact */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <div className="text-xs font-bold text-slate-500">
+              <div className="p-5 rounded-2xl lyner-section-surface space-y-3">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                   Key Verified Highlights from Artifact
                 </div>
                 {selectedFile.name.includes('survey') ? (
-                  <div className="space-y-2 text-xs sm:text-sm text-slate-800">
+                  <div className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed">
                     <div>
                       • <strong>Total student responses:</strong> 86 students across classrooms
                     </div>
@@ -2830,7 +2929,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     </div>
                   </div>
                 ) : selectedFile.name.includes('prototype') ? (
-                  <div className="space-y-2 text-xs sm:text-sm text-slate-800">
+                  <div className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed">
                     <div>
                       • <strong>Structure:</strong> 3 clearly divided sections (Paper · Plastic · General Waste)
                     </div>
@@ -2839,7 +2938,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 text-xs sm:text-sm text-slate-800">
+                  <div className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed">
                     <div>
                       • <strong>Version A:</strong> Simple recycling symbols and category titles
                     </div>
@@ -2850,7 +2949,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
                 <span className="text-xs text-slate-500">
                   Connected DNA Section:{' '}
                   <strong className="text-slate-900">
@@ -2860,7 +2959,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectTab('dna')}
-                  className="lyner-btn-primary px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                  className="lyner-btn-primary px-4 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Read in Project DNA</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -2878,20 +2977,20 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
      ================================================================== */
   if (activeTab === 'members') {
     return (
-      <div className="p-6 sm:p-10 max-w-4xl mx-auto space-y-6">
-        <div className="space-y-1">
-          <div className="text-xs font-bold text-[#4F46E5]">
+      <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-4xl mx-auto space-y-9">
+        <header className="space-y-2 pb-8 border-b border-slate-200/90">
+          <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
             Team Roles & Responsibilities
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             {project.name} Team Members
           </h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-base text-slate-600 max-w-2xl leading-relaxed">
             Click any team member to inspect their assigned tasks or collaborate with them in Team Chat.
           </p>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {project.members.map((m) => {
             const assignedTasks = project.tasks.filter(
               (t) =>
@@ -2905,16 +3004,16 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             return (
               <div
                 key={m.id}
-                className="bg-white/95 rounded-3xl p-6 border-2 border-indigo-100 shadow-xs flex flex-col justify-between space-y-4"
+                className="lyner-document-sheet rounded-3xl p-7 flex flex-col justify-between space-y-5"
               >
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3.5">
                       {m.isAI ? (
                         <Mascot state="HELPING" size="sm" />
                       ) : (
                         <div
-                          className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white font-extrabold text-sm ${m.avatarColor}`}
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-extrabold text-sm shadow-2xs ${m.avatarColor}`}
                         >
                           {m.name.slice(0, 2).toUpperCase()}
                         </div>
@@ -2930,18 +3029,18 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     </div>
 
                     {!m.isAI && (
-                      <span className="text-xs font-mono tabular-nums font-bold text-emerald-700">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-xs font-mono tabular-nums font-bold text-emerald-700">
                         {verifiedCount}/{assignedTasks.length} verified
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-slate-600 leading-relaxed">
                     {m.focus}
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                <div className="pt-4 border-t border-slate-100 flex items-center gap-2.5">
                   {!m.isAI ? (
                     <>
                       <button
@@ -2950,7 +3049,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                           setMemberFilter(m.name);
                           onSelectTab('tasks');
                         }}
-                        className="lyner-btn-secondary flex-1 py-2 px-3 rounded-xl text-xs font-bold cursor-pointer"
+                        className="lyner-btn-secondary flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold cursor-pointer"
                       >
                         View {m.name}’s Tasks ({assignedTasks.length})
                       </button>
@@ -2960,7 +3059,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                           setActiveChatSender(m.name);
                           onSelectTab('chat');
                         }}
-                        className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4F46E5] text-xs font-bold cursor-pointer"
+                        className="px-3.5 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#4F46E5] text-xs font-bold cursor-pointer transition-colors"
                       >
                         Speak as {m.name}
                       </button>
@@ -2969,7 +3068,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                     <button
                       type="button"
                       onClick={() => onSelectTab('dna')}
-                      className="lyner-btn-secondary w-full py-2 px-3 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer"
+                      className="lyner-btn-secondary w-full py-2.5 px-3.5 rounded-xl text-xs font-bold text-[#4F46E5] cursor-pointer"
                     >
                       Ask Lyner to Refine Project DNA →
                     </button>
@@ -2984,26 +3083,26 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   }
 
   return (
-    <div className="p-6 sm:p-10 max-w-3xl mx-auto space-y-6">
-      <div className="space-y-1">
-        <div className="text-xs font-bold text-[#4F46E5]">
+    <div className="py-8 sm:py-12 px-5 sm:px-10 max-w-3xl mx-auto space-y-8">
+      <header className="space-y-2 pb-6 border-b border-slate-200/90">
+        <div className="text-xs font-extrabold uppercase tracking-wider text-[#4F46E5]">
           Workspace Settings
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900">
+        <h1 className="text-3xl font-extrabold text-slate-900">
           {project.name} Settings
         </h1>
-      </div>
-      <div className="bg-white/95 rounded-3xl p-6 border-2 border-indigo-100 space-y-4">
-        <div className="text-sm font-bold text-slate-900">
+      </header>
+      <div className="lyner-document-sheet rounded-3xl p-7 sm:p-8 space-y-5">
+        <div className="text-base font-extrabold text-slate-900">
           Living Project DNA Sections ({project.dna.length})
         </div>
-        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
           Project DNA is read-only by default and adapts its structure to your project. As teammates submit work in Tasks or resolve tradeoffs in Team Chat, Lyner keeps the brief up to date.
         </p>
         <button
           type="button"
           onClick={() => onSelectTab('dna')}
-          className="lyner-btn-primary px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
+          className="lyner-btn-primary px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer"
         >
           Open Project DNA Brief
         </button>
